@@ -2,31 +2,81 @@ Class {
 	#name : 'FEBHousehold',
 	#superclass : 'CMAgent',
 	#instVars : [
-		'income',
 		'need',
 		'satisfactionMemory',
 		'hungerMemory',
-		'preference',
-		'statePref',
-		'outlets'
+		'outlets',
+		'unvisitedOutlets',
+		'availableTime',
+		'availableMoney',
+		'householdSize',
+		'preference'
+	],
+	#classInstVars : [
+		'minHouseholdSize',
+		'maxHouseholdSize'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
 }
 
+{ #category : 'initialization' }
+FEBHousehold class >> initializeParameters [
+
+	super initializeParameters.
+	minHouseholdSize := 2.
+	maxHouseholdSize := 5
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> maxHouseholdSize [
+
+	^ maxHouseholdSize
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> maxHouseholdSize: anObject [
+
+	maxHouseholdSize := anObject
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> minHouseholdSize [
+
+	^ minHouseholdSize
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> minHouseholdSize: anObject [
+
+	minHouseholdSize := anObject
+]
+
 { #category : 'accessing' }
 FEBHousehold >> buyFood [
 
-	self outletsSortedByDistance do: [ :outlet |
-			self buyFoodFrom: outlet.
-			
-			need > 0 ifFalse: [ 
-				hungerMemory := 0.
-				^ self ]. "^self is implicit in Pharo, it marks the end/execution of the method, it means stop executing here"
+	| outlet currentCell |
+	
+	unvisitedOutlets := outlets copy.
+	currentCell := self cell.
 
-			 ].
-		
-	hungerMemory := hungerMemory+1.
+	[ unvisitedOutlets isEmpty ] whileFalse: [
+			outlet := self unvisitedOutletClosestTo: currentCell.
+			currentCell := outlet cell.
+			unvisitedOutlets remove: outlet.
+			 
+			self buyFoodFrom: outlet.
+
+			need > 0 ifFalse: [ 
+				"Household is satisfied"
+					hungerMemory := 0.
+					satisfactionMemory := satisfactionMemory + 1.
+					"^self is implicit in Pharo, it marks the end/execution of the method, it means stop executing here"
+					^ self ] ].
+
+	"Household is unsatisfied"
+	hungerMemory := hungerMemory + 1.
+	satisfactionMemory := 0
 ]
 
 { #category : 'accessing' }
@@ -48,7 +98,7 @@ FEBHousehold >> doesPreferConventional [
 "is a state: household prefers conventional food"
 	"^ self satisfactionMemory < 3."
 	
-	^ statePref = #preferConventional
+	^ preference = #preferConventional
 	
 ]
 
@@ -57,7 +107,7 @@ FEBHousehold >> doesPreferHealthy [
 
 	"^ self satisfactionMemory >= 3."
 	
-	^ statePref = #preferHealthy
+	^ preference = #preferHealthy
 	
 ]
 
@@ -65,8 +115,18 @@ FEBHousehold >> doesPreferHealthy [
 FEBHousehold >> initialize [
 
 	super initialize.
+	satisfactionMemory := 0.
 	hungerMemory := 0.
 	
+	householdSize := self
+		randomIntegerBetween: self class minHouseholdSize
+		and: self class maxHouseholdSize.
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> need [
+
+	^ need
 ]
 
 { #category : 'accessing' }
@@ -75,26 +135,22 @@ FEBHousehold >> outlets: aCollection [
 	outlets := aCollection
 ]
 
-{ #category : 'as yet unclassified' }
-FEBHousehold >> outletsSortedByDistance [
-
-^ outlets sorted: [ :a :b | (self cell distanceTo: a cell) < (self cell distanceTo: b cell) ]
-]
-
 { #category : 'accessing' }
 FEBHousehold >> pov [
 
 	<pov>
-		
-	statePref = #preferConventional 
-							ifTrue: [ ^ CMPointOfView  color: Color orange
-																shape: #circle
-																size: 0.9 ].
-															
-	statePref = #preferHealthy 
-							ifTrue: [ ^ CMPointOfView  color: Color purple
-																shape: #circle
-																size: 0.9 ].
+	| color min max size |
+	"color := self doesPreferConventional
+		ifTrue: [ Color orange ]
+		ifFalse: [ Color purple ]."
+	self doesPreferConventional ifTrue: [ color := Color orange ].
+	self doesPreferHealthy ifTrue: [ color := Color purple ].
+
+	min := self class minHouseholdSize.
+	max := self class maxHouseholdSize.
+	size := 0.5 + (householdSize - min / (max - min) asFloat * 0.5).
+
+	^ CMPointOfView color: color shape: #circle size: size
 ]
 
 { #category : 'as yet unclassified' }
@@ -102,7 +158,7 @@ FEBHousehold >> preferConventional [
 "is a state: household prefers conventional food"
 	"^ self satisfactionMemory < 3."
 	
-	statePref := #preferConventional
+	preference := #preferConventional
 	
 ]
 
@@ -111,7 +167,7 @@ FEBHousehold >> preferHealthy [
 
 	"^ self satisfactionMemory >= 3."
 	
-	statePref := #preferHealthy
+	preference := #preferHealthy
 	
 ]
 
@@ -119,13 +175,31 @@ FEBHousehold >> preferHealthy [
 FEBHousehold >> reconsiderPreference [
 
 	self doesPreferHealthy ifTrue: [
-		hungerMemory > 0 ifTrue: [ self preferConventional ] ]
+		hungerMemory > 0 ifTrue: [ self preferConventional ] ].
+
+	self doesPreferConventional ifTrue: [
+		satisfactionMemory > 3 ifTrue: [ self preferHealthy ] ]
 ]
 
 { #category : 'accessing' }
 FEBHousehold >> step [
 
-	need := 5.
+	availableTime := 4 hours. "available for getting food"
+	availableMoney := 100. "Income"
+	need := 3 * householdSize. "3 meals times the number of persons in the household"
+
 	self buyFood.
-	self reconsiderPreference .
+	self reconsiderPreference
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> unvisitedOutletClosestTo: aCell [
+
+	| sortedUnvisitedOutlets |
+	
+	sortedUnvisitedOutlets := unvisitedOutlets sorted: [ :a :b |
+		(a cell distanceTo: aCell) < (b cell distanceTo: aCell) ].
+	
+	^ sortedUnvisitedOutlets first
+	
 ]

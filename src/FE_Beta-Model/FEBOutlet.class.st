@@ -25,9 +25,7 @@ FEBOutlet >> availableHealthyFood [
 FEBOutlet >> initialize [
 
 	super initialize.
-	
-availableHealthyFood := 5.
-availableConventionalFood :=5.
+	self restock
 ]
 
 { #category : 'as yet unclassified' }
@@ -48,8 +46,8 @@ FEBOutlet >> pov [
 { #category : 'as yet unclassified' }
 FEBOutlet >> restock [
 
-availableHealthyFood := 5.
-availableConventionalFood := 5.
+	availableHealthyFood := 47.
+	availableConventionalFood := 47
 ]
 
 { #category : 'accessing' }

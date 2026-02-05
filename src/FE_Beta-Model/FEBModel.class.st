@@ -68,6 +68,20 @@ FEBModel >> initializeAgents [
 	self households do: [ :each | each outlets: self outlets ]
 ]
 
+{ #category : 'as yet unclassified' }
+FEBModel >> numberOfConventionalHouseholds [
+
+	<probeNamed: 'Number of conventional households' color: #orange>
+	^ self households count: #doesPreferConventional
+]
+
+{ #category : 'as yet unclassified' }
+FEBModel >> numberOfHealthyHouseholds [
+
+	<probeNamed: 'Number of healthy households' color: #purple>
+	^ self households count: #doesPreferHealthy
+]
+
 { #category : 'accessing' }
 FEBModel >> outlets [
 
