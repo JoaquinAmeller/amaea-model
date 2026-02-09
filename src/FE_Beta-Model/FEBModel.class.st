@@ -82,10 +82,38 @@ FEBModel >> numberOfHealthyHouseholds [
 	^ self households count: #doesPreferHealthy
 ]
 
+{ #category : 'as yet unclassified' }
+FEBModel >> numberOfHungryPeople [
+
+	<probeNamed: 'Number of hungry people' color: #red>
+	^ (self households select: #isHungry ) sum: #householdSize 
+]
+
+{ #category : 'as yet unclassified' }
+FEBModel >> numberOfSatisfiedPeople [
+
+	<probeNamed: 'Number of satisfied people' color: #green>
+	^ (self households select: #isSatisfied) sum: #householdSize
+]
+
 { #category : 'accessing' }
 FEBModel >> outlets [
 
  ^ self @@ FEBOutlet .
+]
+
+{ #category : 'as yet unclassified' }
+FEBModel >> percentageOfHungryPeople [
+
+	<probeNamed: 'Percentage of hungry people' color: #red>
+	^ self numberOfHungryPeople / self totalNumberOfPeople
+]
+
+{ #category : 'as yet unclassified' }
+FEBModel >> percentageOfSatisfiedPeople [
+
+	<probeNamed: 'Percentage of satisfied people' color: #green>
+	^ self numberOfSatisfiedPeople / self totalNumberOfPeople
 ]
 
 { #category : 'as yet unclassified' }
@@ -95,4 +123,9 @@ FEBModel >> step [
 	(self @@ FEBHousehold) shuffled do: #step.
 
 	(self @@ FEBOutlet) shuffled do: #restock.
+]
+
+{ #category : 'as yet unclassified' }
+FEBModel >> totalNumberOfPeople [
+^ self households sum: #householdSize 
 ]

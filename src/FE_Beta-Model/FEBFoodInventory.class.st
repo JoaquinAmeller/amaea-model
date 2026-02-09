@@ -34,10 +34,14 @@ FEBFoodInventory >> pricePerUnit: anObject [
 ]
 
 { #category : 'as yet unclassified' }
-FEBFoodInventory >> takeUpTo: requestedAmount [
+FEBFoodInventory >> takeUpTo: requestedAmount withMoneyUpTo: availableMoney [
 
-	| amount |
+	| amount affordableAmount |
 	amount := requestedAmount min: availableAmount.
+	
+	affordableAmount := (availableMoney / pricePerUnit) asInteger.
+	amount := amount min: affordableAmount .
+	
 	availableAmount := availableAmount - amount.
 	^ amount
 ]

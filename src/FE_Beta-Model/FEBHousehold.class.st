@@ -53,6 +53,12 @@ FEBHousehold class >> minHouseholdSize: anObject [
 	minHouseholdSize := anObject
 ]
 
+{ #category : 'as yet unclassified' }
+FEBHousehold >> availableMoney [
+
+	^ remainingMoney 
+]
+
 { #category : 'accessing' }
 FEBHousehold >> buyAmountOfFood: amount for: moneySpent [
 
@@ -111,6 +117,12 @@ FEBHousehold >> doesPreferHealthy [
 ]
 
 { #category : 'accessing' }
+FEBHousehold >> householdSize [
+
+	^ householdSize
+]
+
+{ #category : 'accessing' }
 FEBHousehold >> initialize [
 
 	super initialize.
@@ -121,6 +133,16 @@ FEBHousehold >> initialize [
 	householdSize := self
 		                 randomIntegerBetween: self class minHouseholdSize
 		                 and: self class maxHouseholdSize
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isHungry [
+^ hungerMemory > 0
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isSatisfied [
+^ satisfactionMemory > 0
 ]
 
 { #category : 'accessing' }

@@ -16,9 +16,9 @@ FEBOutlet >> initialize [
 
 	healthyFoodInventory := FEBFoodInventory new.
 	conventionalFoodInventory := FEBFoodInventory new.
-	
-	healthyFoodInventory pricePerUnit: 50.
-	conventionalFoodInventory pricePerUnit: 1.
+
+	healthyFoodInventory pricePerUnit: 15.
+	conventionalFoodInventory pricePerUnit: 5.
 
 	self restock
 ]
@@ -41,8 +41,8 @@ FEBOutlet >> pov [
 { #category : 'as yet unclassified' }
 FEBOutlet >> restock [
 
-	healthyFoodInventory availableAmount: 37.
-	conventionalFoodInventory availableAmount: 37
+	healthyFoodInventory availableAmount: 37000.
+	conventionalFoodInventory availableAmount: 37000
 ]
 
 { #category : 'accessing' }
@@ -55,7 +55,11 @@ FEBOutlet >> sellConventionalFoodTo: household [
 FEBOutlet >> sellFoodFrom: inventory to: household [
 
 	| amount moneySpent |
-	amount := inventory takeUpTo: household need.
+	
+	amount := inventory
+		takeUpTo: household need
+		withMoneyUpTo: household availableMoney.
+		
 	moneySpent := amount * inventory pricePerUnit.
 	household buyAmountOfFood: amount for: moneySpent
 ]
