@@ -54,6 +54,13 @@ FEBHousehold class >> minHouseholdSize: anObject [
 ]
 
 { #category : 'accessing' }
+FEBHousehold >> buyAmountOfFood: amount for: moneySpent [
+
+	remainingMoney := remainingMoney - moneySpent.
+	need := need - amount
+]
+
+{ #category : 'accessing' }
 FEBHousehold >> buyFood [
 
 	| outlet currentCell |
@@ -79,20 +86,10 @@ FEBHousehold >> buyFood [
 { #category : 'accessing' }
 FEBHousehold >> buyFoodFrom: outlet [
 
-	| amountOfFoodToBuy moneySpent |
-	self doesPreferHealthy ifTrue: [
-			amountOfFoodToBuy := need min: outlet availableHealthyFood.
-			outlet sellHealthyFood: amountOfFoodToBuy.
-			moneySpent := amountOfFoodToBuy * outlet priceOfHealthyFoodPerUnit.
-			remainingMoney := remainingMoney - moneySpent.
-			need := need - amountOfFoodToBuy ].
-
-	amountOfFoodToBuy := need min: outlet availableConventionalFood.
-	outlet sellConventionalFood: amountOfFoodToBuy.
-	moneySpent := amountOfFoodToBuy
-	              * outlet priceOfConventionalFoodPerUnit.
-	remainingMoney := remainingMoney - moneySpent.
-	need := need - amountOfFoodToBuy
+	self doesPreferHealthy 
+		ifTrue: [outlet sellHealthyFoodTo: self] 
+		ifFalse: [ outlet sellConventionalFoodTo: self ]
+	
 ]
 
 { #category : 'as yet unclassified' }

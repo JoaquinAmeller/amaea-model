@@ -2,29 +2,24 @@ Class {
 	#name : 'FEBOutlet',
 	#superclass : 'CMAgent',
 	#instVars : [
-		'availableHealthyFood',
-		'availableConventionalFood'
+		'conventionalFoodInventory',
+		'healthyFoodInventory'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
 }
 
-{ #category : 'accessing' }
-FEBOutlet >> availableConventionalFood [
-
-	^ availableConventionalFood
-]
-
-{ #category : 'accessing' }
-FEBOutlet >> availableHealthyFood [
-
-	^ availableHealthyFood
-]
-
 { #category : 'initialization' }
 FEBOutlet >> initialize [
 
 	super initialize.
+
+	healthyFoodInventory := FEBFoodInventory new.
+	conventionalFoodInventory := FEBFoodInventory new.
+	
+	healthyFoodInventory pricePerUnit: 50.
+	conventionalFoodInventory pricePerUnit: 1.
+
 	self restock
 ]
 
@@ -44,30 +39,29 @@ FEBOutlet >> pov [
 ]
 
 { #category : 'as yet unclassified' }
-FEBOutlet >> priceOfConventionalFoodPerUnit [
-
-	^ 1
-]
-
-{ #category : 'as yet unclassified' }
-FEBOutlet >> priceOfHealthyFoodPerUnit [
-
-	^ 50
-]
-
-{ #category : 'as yet unclassified' }
 FEBOutlet >> restock [
 
-	availableHealthyFood := 37.
-	availableConventionalFood := 37
+	healthyFoodInventory availableAmount: 37.
+	conventionalFoodInventory availableAmount: 37
 ]
 
 { #category : 'accessing' }
-FEBOutlet >> sellConventionalFood: amount [
-availableConventionalFood := availableConventionalFood - amount.
+FEBOutlet >> sellConventionalFoodTo: household [
+
+	self sellFoodFrom: conventionalFoodInventory to: household
 ]
 
 { #category : 'accessing' }
-FEBOutlet >> sellHealthyFood: amount [
-availableHealthyFood := availableHealthyFood - amount.
+FEBOutlet >> sellFoodFrom: inventory to: household [
+
+	| amount moneySpent |
+	amount := inventory takeUpTo: household need.
+	moneySpent := amount * inventory pricePerUnit.
+	household buyAmountOfFood: amount for: moneySpent
+]
+
+{ #category : 'accessing' }
+FEBOutlet >> sellHealthyFoodTo: household [
+
+	self sellFoodFrom: healthyFoodInventory to: household 
 ]
