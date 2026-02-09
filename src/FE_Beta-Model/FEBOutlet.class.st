@@ -44,10 +44,22 @@ FEBOutlet >> pov [
 ]
 
 { #category : 'as yet unclassified' }
+FEBOutlet >> priceOfConventionalFoodPerUnit [
+
+	^ 1
+]
+
+{ #category : 'as yet unclassified' }
+FEBOutlet >> priceOfHealthyFoodPerUnit [
+
+	^ 50
+]
+
+{ #category : 'as yet unclassified' }
 FEBOutlet >> restock [
 
-	availableHealthyFood := 47.
-	availableConventionalFood := 47
+	availableHealthyFood := 37.
+	availableConventionalFood := 37
 ]
 
 { #category : 'accessing' }

@@ -8,7 +8,8 @@ Class {
 		'outlets',
 		'unvisitedOutlets',
 		'availableTime',
-		'availableMoney',
+		'availableMoneyPerStep',
+		'remainingMoney',
 		'householdSize',
 		'preference'
 	],
@@ -56,7 +57,6 @@ FEBHousehold class >> minHouseholdSize: anObject [
 FEBHousehold >> buyFood [
 
 	| outlet currentCell |
-	
 	unvisitedOutlets := outlets copy.
 	currentCell := self cell.
 
@@ -64,33 +64,35 @@ FEBHousehold >> buyFood [
 			outlet := self unvisitedOutletClosestTo: currentCell.
 			currentCell := outlet cell.
 			unvisitedOutlets remove: outlet.
-			 
+
 			self buyFoodFrom: outlet.
 
-			need > 0 ifFalse: [ 
-				"Household is satisfied"
+			need > 0 ifFalse: [ "Household isnt hungry"
 					hungerMemory := 0.
-					satisfactionMemory := satisfactionMemory + 1.
 					"^self is implicit in Pharo, it marks the end/execution of the method, it means stop executing here"
 					^ self ] ].
 
-	"Household is unsatisfied"
+	"Household is hungry"
 	hungerMemory := hungerMemory + 1.
-	satisfactionMemory := 0
 ]
 
 { #category : 'accessing' }
 FEBHousehold >> buyFoodFrom: outlet [
 
-	| amount |
+	| amountOfFoodToBuy moneySpent |
 	self doesPreferHealthy ifTrue: [
-			amount := need min: outlet availableHealthyFood.
-			outlet sellHealthyFood: amount.
-			need := need - amount ].
+			amountOfFoodToBuy := need min: outlet availableHealthyFood.
+			outlet sellHealthyFood: amountOfFoodToBuy.
+			moneySpent := amountOfFoodToBuy * outlet priceOfHealthyFoodPerUnit.
+			remainingMoney := remainingMoney - moneySpent.
+			need := need - amountOfFoodToBuy ].
 
-	amount := need min: outlet availableConventionalFood.
-	outlet sellConventionalFood: amount.
-	need := need - amount.
+	amountOfFoodToBuy := need min: outlet availableConventionalFood.
+	outlet sellConventionalFood: amountOfFoodToBuy.
+	moneySpent := amountOfFoodToBuy
+	              * outlet priceOfConventionalFoodPerUnit.
+	remainingMoney := remainingMoney - moneySpent.
+	need := need - amountOfFoodToBuy
 ]
 
 { #category : 'as yet unclassified' }
@@ -115,12 +117,13 @@ FEBHousehold >> doesPreferHealthy [
 FEBHousehold >> initialize [
 
 	super initialize.
-	satisfactionMemory := 0.
+	satisfactionMemory := 2.
 	hungerMemory := 0.
-	
+	availableMoneyPerStep := 100.
+
 	householdSize := self
-		randomIntegerBetween: self class minHouseholdSize
-		and: self class maxHouseholdSize.
+		                 randomIntegerBetween: self class minHouseholdSize
+		                 and: self class maxHouseholdSize
 ]
 
 { #category : 'accessing' }
@@ -175,7 +178,7 @@ FEBHousehold >> preferHealthy [
 FEBHousehold >> reconsiderPreference [
 
 	self doesPreferHealthy ifTrue: [
-		hungerMemory > 0 ifTrue: [ self preferConventional ] ].
+		satisfactionMemory = 0 ifTrue: [ self preferConventional ] ].
 
 	self doesPreferConventional ifTrue: [
 		satisfactionMemory > 3 ifTrue: [ self preferHealthy ] ]
@@ -185,11 +188,13 @@ FEBHousehold >> reconsiderPreference [
 FEBHousehold >> step [
 
 	availableTime := 4 hours. "available for getting food"
-	availableMoney := 100. "Income"
+	remainingMoney := availableMoneyPerStep.
 	need := 3 * householdSize. "3 meals times the number of persons in the household"
 
 	self buyFood.
-	self reconsiderPreference
+	self updateSatisfactionMemory.
+	self reconsiderPreference.
+
 ]
 
 { #category : 'as yet unclassified' }
@@ -202,4 +207,15 @@ FEBHousehold >> unvisitedOutletClosestTo: aCell [
 	
 	^ sortedUnvisitedOutlets first
 	
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> updateSatisfactionMemory [
+
+	need = 0
+		ifTrue: [ "household is satisfied"
+			remainingMoney >= (0.4 * availableMoneyPerStep) 
+				ifTrue: [satisfactionMemory := satisfactionMemory + 1 ] 
+				ifFalse: [satisfactionMemory := 0]]
+		ifFalse: [ "Household isnt satisfied" satisfactionMemory := 0 ]
 ]
