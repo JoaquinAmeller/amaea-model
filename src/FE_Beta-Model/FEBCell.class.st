@@ -34,3 +34,13 @@ FEBCell >> pov [
 FEBCell >> state [
 	^ state
 ]
+
+{ #category : 'as yet unclassified' }
+FEBCell >> timeToTravelTo: anotherCell [
+
+	| numberOfCellsToTravel |
+	numberOfCellsToTravel := self distanceTo: anotherCell.
+	
+	"each cell takes 5 minutes walk to travel" 
+	^ 5 minutes * numberOfCellsToTravel
+]

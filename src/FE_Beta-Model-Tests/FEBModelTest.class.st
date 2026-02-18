@@ -35,7 +35,7 @@ FEBModelTest >> testTimeToTravelTo [
 
 	outlet1 := model outlets first.
 	outlet2 := model outlets second.
-	time1 := household timeToTravelTo: outlet1.
-	time2 := household timeToTravelTo: outlet2.
+	time1 := household cell timeToTravelTo: outlet1 cell.
+	time2 := household cell timeToTravelTo: outlet2 cell.
 	self assert: time1 < time2 
 ]
