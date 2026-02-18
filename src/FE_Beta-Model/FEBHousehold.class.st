@@ -8,6 +8,7 @@ Class {
 		'outlets',
 		'unvisitedOutlets',
 		'availableTime',
+		'timeSpent',
 		'availableMoneyPerStep',
 		'remainingMoney',
 		'householdSize',
@@ -90,11 +91,15 @@ FEBHousehold >> buyFood [
 ]
 
 { #category : 'accessing' }
-FEBHousehold >> buyFoodFrom: outlet [
+FEBHousehold >> buyFoodFrom: outlet [ 
+
+	timeSpent := timeSpent + (self timeToTravelTo: outlet).
 
 	self doesPreferHealthy 
 		ifTrue: [outlet sellHealthyFoodTo: self] 
 		ifFalse: [ outlet sellConventionalFoodTo: self ]
+		
+	
 	
 ]
 
@@ -129,6 +134,7 @@ FEBHousehold >> initialize [
 	satisfactionMemory := 2.
 	hungerMemory := 0.
 	availableMoneyPerStep := 100.
+	self preferConventional . "by default households prefer conventional just to avoid it to be nil. Init in the model will assign the proportions of preferences"
 
 	householdSize := self
 		                 randomIntegerBetween: self class minHouseholdSize
@@ -149,6 +155,12 @@ FEBHousehold >> isSatisfied [
 FEBHousehold >> need [
 
 	^ need
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> outlets [
+
+	^ outlets
 ]
 
 { #category : 'accessing' }
@@ -207,6 +219,7 @@ FEBHousehold >> reconsiderPreference [
 FEBHousehold >> step [
 
 	availableTime := 4 hours. "available for getting food"
+	timeSpent := 0 seconds.
 	remainingMoney := availableMoneyPerStep.
 	need := 3 * householdSize. "3 meals times the number of persons in the household"
 
@@ -214,6 +227,16 @@ FEBHousehold >> step [
 	self updateSatisfactionMemory.
 	self reconsiderPreference.
 
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> timeToTravelTo: outlet [
+
+	| numberOfCellsToTravel |
+	numberOfCellsToTravel := self cell distanceTo: outlet cell.
+	
+	"each cell takes 5 minutes walk to travel" 
+	^ 5 minutes * numberOfCellsToTravel
 ]
 
 { #category : 'as yet unclassified' }

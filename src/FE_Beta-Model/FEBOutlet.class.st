@@ -30,7 +30,7 @@ FEBOutlet >> pov [
 	^ CMPointOfView
 		color: Color gray
 		shape: #square 
-		size: 1.6.
+		size: 1.
 		
 		
 		"borderColor: Color darkGray 
@@ -41,8 +41,8 @@ FEBOutlet >> pov [
 { #category : 'as yet unclassified' }
 FEBOutlet >> restock [
 
-	healthyFoodInventory availableAmount: 37000.
-	conventionalFoodInventory availableAmount: 37000
+	healthyFoodInventory availableAmount: 25.
+	conventionalFoodInventory availableAmount: 25
 ]
 
 { #category : 'accessing' }
