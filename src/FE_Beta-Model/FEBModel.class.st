@@ -45,13 +45,25 @@ FEBModel >> init [
 { #category : 'as yet unclassified' }
 FEBModel >> initializeAgents [
 
-	| shuffledAgents proportion numberOfAgents |
 	self createN: 100 randomlyLocatedAloneEntities: FEBHousehold.
+	
+	self initializePreferences.
+	self initializeStrategies.
 
-	"Create a copy of agents collection where agents are shuffled randomly. Now if we take the first half of that collection, this will give us exactly 50% of agents selected randomly. And the second half is another 50%"
-	shuffledAgents := self agents asOrderedCollection shuffle.
+	self createN: 40 randomlyLocatedAloneEntities: FEBOutlet.
+
+	self households do: [ :each | each outlets: self outlets ]
+]
+
+{ #category : 'initialization' }
+FEBModel >> initializePreferences [
 
 	"You can change this number to be different than 50%"
+	| proportion numberOfAgents shuffledAgents |
+	
+	"Create a copy of agents collection where agents are shuffled randomly. Now if we take the first half of that collection, this will give us exactly 50% of agents selected randomly. And the second half is another 50%"
+	shuffledAgents := self agents asOrderedCollection shuffle.
+	
 	proportion := 0.5.
 	numberOfAgents := self agents size.
 
@@ -62,10 +74,27 @@ FEBModel >> initializeAgents [
 	"Second part - from p*N to N (all other agents)"
 	((proportion * numberOfAgents) asInteger to: numberOfAgents) do: [ :i |
 		(shuffledAgents at: i) preferConventional ].
+]
 
-	self createN: 10 randomlyLocatedAloneEntities: FEBOutlet.
+{ #category : 'initialization' }
+FEBModel >> initializeStrategies [
 
-	self households do: [ :each | each outlets: self outlets ]
+	"You can change this number to be different than 50%"
+	| proportion numberOfAgents shuffledAgents |
+	
+	"Create a copy of agents collection where agents are shuffled randomly. Now if we take the first half of that collection, this will give us exactly 50% of agents selected randomly. And the second half is another 50%"
+	shuffledAgents := self agents asOrderedCollection shuffle.
+	
+	proportion := 0.5.
+	numberOfAgents := self agents size.
+
+	"First part - from 1 to p*N where N is the number of agents and p is proportion"
+	(1 to: (proportion * numberOfAgents) asInteger) do: [ :i |
+		(shuffledAgents at: i) beMoneySaver ].
+
+	"Second part - from p*N to N (all other agents)"
+	((proportion * numberOfAgents) asInteger to: numberOfAgents) do: [ :i |
+		(shuffledAgents at: i) beTimeSaver ].
 ]
 
 { #category : 'as yet unclassified' }

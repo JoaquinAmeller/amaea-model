@@ -12,7 +12,8 @@ Class {
 		'householdSize',
 		'preference',
 		'availableTimePerStep',
-		'remainingTime'
+		'remainingTime',
+		'strategy'
 	],
 	#classInstVars : [
 		'minHouseholdSize',
@@ -58,6 +59,30 @@ FEBHousehold class >> minHouseholdSize: anObject [
 FEBHousehold >> availableMoney [
 
 	^ remainingMoney 
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> beDesperateSaver [
+	<action>
+	strategy := FEBDesperateSaverStrategy new
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> beMoneySaver [
+	<action>
+	strategy := FEBMoneySaverStrategy new
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> beRichBastard [
+	<action>
+	strategy := FEBRichBastardStrategy new
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> beTimeSaver [
+	<action>
+	strategy := FEBTimeSaverStrategy new
 ]
 
 { #category : 'accessing' }
@@ -142,13 +167,26 @@ FEBHousehold >> initialize [
 	
 	"available for getting food"
 	availableMoneyPerStep := 100.
-	availableTimePerStep := 30 minutes. 
+	availableTimePerStep := 2 hours. 
 	
-	self preferConventional . "by default households prefer conventional just to avoid it to be nil. Init in the model will assign the proportions of preferences"
+	"by default households prefer conventional just to avoid it to be nil.
+	Init in the model will assign the proportions of preferences"
+	self preferConventional.
+	
+	"by default households prefers to save money just to avoid it to be nil.
+	Init in the model will assign the proportions of preferences"
+	self beMoneySaver.
+	
 
 	householdSize := self
 		                 randomIntegerBetween: self class minHouseholdSize
 		                 and: self class maxHouseholdSize
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> isDesperateSaver [
+
+	^ strategy isDesperateSaver
 ]
 
 { #category : 'testing' }
@@ -156,12 +194,36 @@ FEBHousehold >> isHungry [
 ^ hungerMemory > 0
 ]
 
+{ #category : 'as yet unclassified' }
+FEBHousehold >> isMoneySaver [
+
+	^ strategy isMoneySaver
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> isRichBastard [
+
+	^ strategy isRichBastard
+]
+
 { #category : 'testing' }
 FEBHousehold >> isSatisfied [
 
 	^ need = 0
-		and: [ remainingMoney >= (availableMoneyPerStep * 0.4)
-			and: [ remainingTime >= (availableTimePerStep * 0.4) ] ]
+		and: [ remainingMoney >= (availableMoneyPerStep * self moneyThreshold)
+			and: [ remainingTime >= (availableTimePerStep * self timeThreshold) ] ]
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> isTimeSaver [
+
+	^ strategy isTimeSaver
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> moneyThreshold [
+
+	^ strategy moneyThreshold
 ]
 
 { #category : 'accessing' }
@@ -193,7 +255,7 @@ FEBHousehold >> pov [
 
 	^ CMPointOfView
 		color: color
-		shape: #circle
+		shape: self shapeOfPovBasedOnStrategy
 		size: self sizeOfPovBasedOnHouseholdSize
 ]
 
@@ -209,7 +271,7 @@ FEBHousehold >> povSatisfaction [
 
 	^ CMPointOfView
 		color: color
-		shape: #circle
+		shape: self shapeOfPovBasedOnStrategy
 		size: self sizeOfPovBasedOnHouseholdSize
 ]
 
@@ -242,6 +304,12 @@ FEBHousehold >> reconsiderPreference [
 ]
 
 { #category : 'accessing' }
+FEBHousehold >> shapeOfPovBasedOnStrategy [
+
+	^ strategy shapeOfPov
+]
+
+{ #category : 'accessing' }
 FEBHousehold >> sizeOfPovBasedOnHouseholdSize [
 
 	| min max |
@@ -262,6 +330,12 @@ FEBHousehold >> step [
 	self updateSatisfactionMemory.
 	self reconsiderPreference.
 
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> timeThreshold [
+
+	^ strategy timeThreshold
 ]
 
 { #category : 'as yet unclassified' }
