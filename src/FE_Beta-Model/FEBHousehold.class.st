@@ -104,9 +104,9 @@ FEBHousehold >> buyFood [
 			outlet := self unvisitedOutletClosestTo: currentCell.
 			timeToTravel := currentCell timeToTravelTo: outlet cell.
 			
-			timeToTravel > remainingTime ifTrue: [ "Household is out of time"
-				hungerMemory := hungerMemory + 1.
-				"^self is implicit in Pharo, it marks the end/execution of the method, it means stop executing here"
+			"Household is out of time
+			^self is implicit in Pharo, it marks the end/execution of the method, it means stop executing here"
+			timeToTravel > remainingTime ifTrue: [ 
 				^ self ].
 			
 			currentCell := outlet cell.
@@ -129,7 +129,7 @@ FEBHousehold >> buyFoodFrom: outlet [
 
 { #category : 'as yet unclassified' }
 FEBHousehold >> consumeFood [
-
+	<action>
 	foodStorage >= dailyNeed
 		ifTrue: [
 			"If hh has enough food to satisfy daily need so no hunger"
@@ -338,7 +338,7 @@ FEBHousehold >> shapeOfPovBasedOnStrategy [
 { #category : 'asserting' }
 FEBHousehold >> shouldGoShopping [
 
-^ true"foodStorage < (1 * dailyNeed )"
+^ foodStorage < (1 * dailyNeed )
 ]
 
 { #category : 'accessing' }
