@@ -8,7 +8,7 @@ To install this model into a fresh Pharo image open the Playground (Ctrl+OP) and
 ```st
 "Install Cormas"
 Metacello new
-    repository: 'github://cormas/cormas';
+    repository: 'github://cormas/cormas:v0.97.1';
     baseline: 'Cormas';
     load.
 
@@ -20,6 +20,12 @@ Metacello new
 ```
 Or if you want to load a specific version:
 ```st
+"Install Cormas"
+Metacello new
+    repository: 'github://cormas/cormas:v0.97.1';
+    baseline: 'Cormas';
+    load.
+
 "Install this model"
 Metacello new
     baseline: 'AmaeaModel';
