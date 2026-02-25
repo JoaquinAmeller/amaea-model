@@ -18,3 +18,11 @@ Metacello new
     repository: 'github://JoaquinAmeller/amaea-model:main';
     load
 ```
+Or if you want to load a specific version:
+```st
+"Install this model"
+Metacello new
+    baseline: 'AmaeaModel';
+    repository: 'github://JoaquinAmeller/amaea-model:v0.1.0';
+    load
+```
