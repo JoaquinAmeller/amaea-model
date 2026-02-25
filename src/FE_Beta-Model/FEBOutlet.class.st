@@ -57,7 +57,7 @@ FEBOutlet >> sellFoodFrom: inventory to: household [
 	| amount moneySpent |
 	
 	amount := inventory
-		takeUpTo: household need
+		takeUpTo: 999999999999 "For now, only restricted by money. Later we will also be restricted by storage"
 		withMoneyUpTo: household availableMoney.
 		
 	moneySpent := amount * inventory pricePerUnit.

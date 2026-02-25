@@ -2,7 +2,7 @@ Class {
 	#name : 'FEBHousehold',
 	#superclass : 'CMAgent',
 	#instVars : [
-		'need',
+		'foodStorage',
 		'satisfactionMemory',
 		'hungerMemory',
 		'outlets',
@@ -13,7 +13,8 @@ Class {
 		'preference',
 		'availableTimePerStep',
 		'remainingTime',
-		'strategy'
+		'strategy',
+		'dailyNeed'
 	],
 	#classInstVars : [
 		'minHouseholdSize',
@@ -89,7 +90,7 @@ FEBHousehold >> beTimeSaver [
 FEBHousehold >> buyAmountOfFood: amount for: moneySpent [
 
 	remainingMoney := remainingMoney - moneySpent.
-	need := need - amount
+	foodStorage := foodStorage + amount.
 ]
 
 { #category : 'accessing' }
@@ -112,15 +113,7 @@ FEBHousehold >> buyFood [
 			unvisitedOutlets remove: outlet.
 			remainingTime := remainingTime - timeToTravel.
 			
-			self buyFoodFrom: outlet.
-
-			need > 0 ifFalse: [ "Household isnt hungry"
-					hungerMemory := 0.
-					"^self is implicit in Pharo, it marks the end/execution of the method, it means stop executing here"
-					^ self ] ].
-
-	"Household is hungry"
-	hungerMemory := hungerMemory + 1.
+			self buyFoodFrom: outlet ].
 ]
 
 { #category : 'accessing' }
@@ -132,6 +125,20 @@ FEBHousehold >> buyFoodFrom: outlet [
 		
 	
 	
+]
+
+{ #category : 'as yet unclassified' }
+FEBHousehold >> consumeFood [
+
+	foodStorage >= dailyNeed
+		ifTrue: [
+			"If hh has enough food to satisfy daily need so no hunger"
+			foodStorage := foodStorage - dailyNeed . 
+			hungerMemory := 0 ] 
+		ifFalse: [
+			"Hh has not enough food to satisfy daily need so eats what it has and there is hunger"
+			foodStorage := 0 .
+			hungerMemory := hungerMemory + 1 ].
 ]
 
 { #category : 'as yet unclassified' }
@@ -152,6 +159,15 @@ FEBHousehold >> doesPreferHealthy [
 	
 ]
 
+{ #category : 'asserting' }
+FEBHousehold >> goShopping [
+<action> 
+	self resetRemainingTimeAndMoney.
+	self buyFood.
+	self updateSatisfactionMemory.
+	self reconsiderPreference.
+]
+
 { #category : 'accessing' }
 FEBHousehold >> householdSize [
 
@@ -162,12 +178,26 @@ FEBHousehold >> householdSize [
 FEBHousehold >> initialize [
 
 	super initialize.
+	
+	householdSize := self
+		                 randomIntegerBetween: self class minHouseholdSize
+		                 and: self class maxHouseholdSize.
+		
 	satisfactionMemory := 2.
 	hungerMemory := 0.
 	
+	"3 meals times the number of persons in the household"
+	dailyNeed := 3 * householdSize. 
+	"Since HH consume food before buying it and then buy food for next day, they must be created with enough food for one day (the first food consumption)."
+	foodStorage := dailyNeed . 
+
+	
 	"available for getting food"
 	availableMoneyPerStep := 100.
-	availableTimePerStep := 2 hours. 
+	availableTimePerStep := 2 hours.
+	
+	"We need to do this to make sure that everyone is satisfied at init -> for the probe to work"
+	self resetRemainingTimeAndMoney.
 	
 	"by default households prefer conventional just to avoid it to be nil.
 	Init in the model will assign the proportions of preferences"
@@ -176,11 +206,6 @@ FEBHousehold >> initialize [
 	"by default households prefers to save money just to avoid it to be nil.
 	Init in the model will assign the proportions of preferences"
 	self beMoneySaver.
-	
-
-	householdSize := self
-		                 randomIntegerBetween: self class minHouseholdSize
-		                 and: self class maxHouseholdSize
 ]
 
 { #category : 'as yet unclassified' }
@@ -209,7 +234,7 @@ FEBHousehold >> isRichBastard [
 { #category : 'testing' }
 FEBHousehold >> isSatisfied [
 
-	^ need = 0
+	^ self isHungry not
 		and: [ remainingMoney >= (availableMoneyPerStep * self moneyThreshold)
 			and: [ remainingTime >= (availableTimePerStep * self timeThreshold) ] ]
 ]
@@ -224,12 +249,6 @@ FEBHousehold >> isTimeSaver [
 FEBHousehold >> moneyThreshold [
 
 	^ strategy moneyThreshold
-]
-
-{ #category : 'accessing' }
-FEBHousehold >> need [
-
-	^ need
 ]
 
 { #category : 'accessing' }
@@ -304,9 +323,22 @@ FEBHousehold >> reconsiderPreference [
 ]
 
 { #category : 'accessing' }
+FEBHousehold >> resetRemainingTimeAndMoney [
+
+	remainingTime := availableTimePerStep.
+	remainingMoney := availableMoneyPerStep.
+]
+
+{ #category : 'accessing' }
 FEBHousehold >> shapeOfPovBasedOnStrategy [
 
 	^ strategy shapeOfPov
+]
+
+{ #category : 'asserting' }
+FEBHousehold >> shouldGoShopping [
+
+^ true"foodStorage < (1 * dailyNeed )"
 ]
 
 { #category : 'accessing' }
@@ -321,14 +353,11 @@ FEBHousehold >> sizeOfPovBasedOnHouseholdSize [
 { #category : 'accessing' }
 FEBHousehold >> step [
 
-	remainingTime := availableTimePerStep.
-	remainingMoney := availableMoneyPerStep.
+	"Households eat in the morning and then they consider buying food for the next day"
+	self consumeFood.
 	
-	need := 3 * householdSize. "3 meals times the number of persons in the household"
-
-	self buyFood.
-	self updateSatisfactionMemory.
-	self reconsiderPreference.
+	self shouldGoShopping ifTrue: [ 
+		self goShopping ]
 
 ]
 
