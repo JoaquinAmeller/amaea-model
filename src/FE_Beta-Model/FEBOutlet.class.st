@@ -46,26 +46,26 @@ FEBOutlet >> restock [
 ]
 
 { #category : 'accessing' }
-FEBOutlet >> sellConventionalFoodTo: household [
+FEBOutlet >> sellConventionalFoodUpTo: aFoodAmount withMoneyUpTo: aMoneyAmount to: aHousehold [ 
 
-	self sellFoodFrom: conventionalFoodInventory to: household
+	self sellFoodUpTo: aFoodAmount withMoneyUpTo: aMoneyAmount from: conventionalFoodInventory to: aHousehold 
 ]
 
 { #category : 'accessing' }
-FEBOutlet >> sellFoodFrom: inventory to: household [
+FEBOutlet >> sellFoodUpTo: aFoodAmount withMoneyUpTo: aMoneyAmount from: anInventory to: aHousehold [
 
 	| amount moneySpent |
 	
-	amount := inventory
-		takeUpTo: 999999999999 "For now, only restricted by money. Later we will also be restricted by storage"
-		withMoneyUpTo: household availableMoney.
+	amount := anInventory
+		takeUpTo: aFoodAmount 
+		withMoneyUpTo: aMoneyAmount .
 		
-	moneySpent := amount * inventory pricePerUnit.
-	household buyAmountOfFood: amount for: moneySpent
+	moneySpent := amount * anInventory pricePerUnit.
+	aHousehold buyAmountOfFood: amount for: moneySpent
 ]
 
 { #category : 'accessing' }
-FEBOutlet >> sellHealthyFoodTo: household [
+FEBOutlet >> sellHealthyFoodUpTo: aFoodAmount withMoneyUpTo: aMoneyAmount to: aHousehold [ 
 
-	self sellFoodFrom: healthyFoodInventory to: household 
+	self sellFoodUpTo: aFoodAmount withMoneyUpTo: aMoneyAmount from: healthyFoodInventory to: aHousehold 
 ]

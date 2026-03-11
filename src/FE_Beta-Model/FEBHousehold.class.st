@@ -104,24 +104,64 @@ FEBHousehold >> buyFood [
 			outlet := self unvisitedOutletClosestTo: currentCell.
 			timeToTravel := currentCell timeToTravelTo: outlet cell.
 			
-			"Household is out of time
-			^self is implicit in Pharo, it marks the end/execution of the method, it means stop executing here"
-			timeToTravel > remainingTime ifTrue: [ 
-				^ self ].
-			
-			currentCell := outlet cell.
-			unvisitedOutlets remove: outlet.
-			remainingTime := remainingTime - timeToTravel.
-			
-			self buyFoodFrom: outlet ].
+			self hasFoodForOneDay 
+				ifTrue: [ "Buying for storage"
+					timeToTravel > (remainingTime - (availableTimePerStep * self timeThreshold ))
+						ifTrue: [ ^ self ].
+					
+					"Travel to outlet"
+					currentCell := outlet cell.
+					unvisitedOutlets remove: outlet.
+					remainingTime := remainingTime - timeToTravel.
+					
+					self buyFoodForStorageFrom: outlet ]
+				ifFalse: [ "Buying for one day and for storage"
+					timeToTravel > remainingTime 
+						ifTrue: [ ^ self ].
+						
+					"Travel to outlet"
+					currentCell := outlet cell.
+					unvisitedOutlets remove: outlet.
+					remainingTime := remainingTime - timeToTravel.
+					
+					self buyFoodForOneDayFrom: outlet.
+					self buyFoodForStorageFrom: outlet ].
+			 ].
 ]
 
 { #category : 'accessing' }
-FEBHousehold >> buyFoodFrom: outlet [ 
+FEBHousehold >> buyFoodForOneDayFrom: outlet [ 
+	| foodAmount moneyAmount |
+	
+	"For now we are trying to buy an infinite amount of food for the money we have (up to the money threshold). Later we will not buy more than the storage capacity"
+	foodAmount := dailyNeed . 
+	moneyAmount := remainingMoney .
+	
+	self buyFoodUpTo: foodAmount forMoneyUpTo: moneyAmount from: outlet
+]
 
+{ #category : 'accessing' }
+FEBHousehold >> buyFoodForStorageFrom: outlet [ 
+	| foodAmount moneyAmount |
+	
+	"For now we are trying to buy an infinite amount of food for the money we have (up to the money threshold). Later we will not buy more than the storage capacity"
+	foodAmount := Float infinity. 
+	moneyAmount := remainingMoney - ( availableMoneyPerStep * self moneyThreshold ).
+	
+	self buyFoodUpTo: foodAmount forMoneyUpTo: moneyAmount from: outlet
+		
+	
+	
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> buyFoodUpTo: aFoodAmount forMoneyUpTo: aMoneyAmount from: anOutlet [
+	
+	aMoneyAmount < 0 ifTrue: [^self].
+	 
 	self doesPreferHealthy 
-		ifTrue: [outlet sellHealthyFoodTo: self] 
-		ifFalse: [ outlet sellConventionalFoodTo: self ]
+		ifTrue: [anOutlet sellHealthyFoodUpTo: aFoodAmount withMoneyUpTo: aMoneyAmount to: self ] 
+		ifFalse: [anOutlet sellConventionalFoodUpTo: aFoodAmount withMoneyUpTo: aMoneyAmount to: self ] 
 		
 	
 	
@@ -166,6 +206,12 @@ FEBHousehold >> goShopping [
 	self buyFood.
 	self updateSatisfactionMemory.
 	self reconsiderPreference.
+]
+
+{ #category : 'asserting' }
+FEBHousehold >> hasFoodForOneDay [	
+
+^ foodStorage >= (1 * dailyNeed )
 ]
 
 { #category : 'accessing' }
@@ -338,7 +384,7 @@ FEBHousehold >> shapeOfPovBasedOnStrategy [
 { #category : 'asserting' }
 FEBHousehold >> shouldGoShopping [
 
-^ foodStorage < (1 * dailyNeed )
+^ self hasFoodForOneDay not
 ]
 
 { #category : 'accessing' }
