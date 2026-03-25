@@ -14,7 +14,8 @@ Class {
 		'availableTimePerStep',
 		'remainingTime',
 		'strategy',
-		'dailyNeed'
+		'dailyNeed',
+		'foodPreferenceOrder'
 	],
 	#classInstVars : [
 		'minHouseholdSize',
@@ -23,6 +24,20 @@ Class {
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
 }
+
+{ #category : 'accessing' }
+FEBHousehold class >> foodPreferenceOrderA [
+
+^ { 	FEBMeat . FEBStaple  . FEBVegetables  . FEBDairy 	 }
+
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> foodPreferenceOrderB [
+
+^ { 	FEBVegetables . FEBStaple  . FEBDairy  . FEBMeat 	 }
+
+]
 
 { #category : 'initialization' }
 FEBHousehold class >> initializeParameters [
@@ -249,9 +264,13 @@ FEBHousehold >> initialize [
 	Init in the model will assign the proportions of preferences"
 	self preferConventional.
 	
+	foodPreferenceOrder := self class foodPreferenceOrderA .
+	
 	"by default households prefers to save money just to avoid it to be nil.
 	Init in the model will assign the proportions of preferences"
 	self beMoneySaver.
+	
+	
 ]
 
 { #category : 'as yet unclassified' }
