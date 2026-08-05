@@ -24,17 +24,9 @@ Class {
 	#package : 'FE_Beta-Model'
 }
 
-{ #category : 'initialization' }
-FEBHousehold class >> initializeParameters [
-
-	super initializeParameters.
-	minHouseholdSize := 2.
-	maxHouseholdSize := 5
-]
-
 { #category : 'accessing' }
 FEBHousehold class >> maxHouseholdSize [
-
+	<parameterIntegerDefault: 5>
 	^ maxHouseholdSize
 ]
 
@@ -46,7 +38,7 @@ FEBHousehold class >> maxHouseholdSize: anObject [
 
 { #category : 'accessing' }
 FEBHousehold class >> minHouseholdSize [
-
+	<parameterIntegerDefault: 2>
 	^ minHouseholdSize
 ]
 

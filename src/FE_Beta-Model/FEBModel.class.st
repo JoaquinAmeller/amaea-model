@@ -1,6 +1,6 @@
 Class {
 	#name : 'FEBModel',
-	#superclass : 'CMAbstractModel',
+	#superclass : 'CMModel',
 	#instVars : [
 		'listOfOutlets',
 		'foodCategories'
@@ -59,12 +59,12 @@ FEBModel >> init [
 { #category : 'as yet unclassified' }
 FEBModel >> initializeAgents [
 
-	self createN: 100 randomlyLocatedAloneEntities: FEBHousehold.
-	
+	self create: 100 randomlyLocatedAloneEntitiesOfClass: FEBHousehold.
+
 	self initializePreferences.
 	self initializeStrategies.
 
-	self createN: 40 randomlyLocatedAloneEntities: FEBOutlet.
+	self create: 40 randomlyLocatedAloneEntitiesOfClass: FEBOutlet.
 
 	self households do: [ :each | each outlets: self outlets ]
 ]
