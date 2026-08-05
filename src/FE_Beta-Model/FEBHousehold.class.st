@@ -382,13 +382,15 @@ FEBHousehold >> sizeOfPovBasedOnHouseholdSize [
 { #category : 'accessing' }
 FEBHousehold >> step [
 
+	inventory emptyTheTrashbin.
+
 	"Households eat in the morning and then they consider buying food for the next day"
 	self consumeFood.
 	
 	self shouldGoShopping ifTrue: [ 
 		self goShopping ].
 	
-	inventory becomeOneDayOlder
+	inventory becomeOneDayOlder.
 
 ]
 

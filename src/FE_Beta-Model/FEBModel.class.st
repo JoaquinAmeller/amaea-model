@@ -21,6 +21,13 @@ FEBModel class >> prefix [
 	^ 'FEB'
 ]
 
+{ #category : 'as yet unclassified' }
+FEBModel >> amountOfSpoledFoodInHouseholds [
+
+	<probeNamed: 'Amount of spoiled food in households' color: #brown>
+	^ self households sum: [ :h | h inventory amountOfFoodInTrashbin ]
+]
+
 { #category : 'accessing' }
 FEBModel >> foodCategories [
 

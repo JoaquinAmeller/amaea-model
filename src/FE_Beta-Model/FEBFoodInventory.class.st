@@ -21,6 +21,12 @@ FEBFoodInventory >> addBatch: aBatch [
 		ifNotNil: [ existing addQuantity: aBatch quantity ]
 ]
 
+{ #category : 'as yet unclassified' }
+FEBFoodInventory >> amountOfFoodInTrashbin [
+
+	^ trashbin sum: [ :batch | batch quantity ]
+]
+
 { #category : 'accessing' }
 FEBFoodInventory >> batches [
 
@@ -44,6 +50,12 @@ FEBFoodInventory >> becomeOneDayOlder [
 
 	batches do: [ :each | each becomeOneDayOlder ].
 	self removeExpiredBatched
+]
+
+{ #category : 'as yet unclassified' }
+FEBFoodInventory >> emptyTheTrashbin [
+
+	trashbin removeAll
 ]
 
 { #category : 'as yet unclassified' }
