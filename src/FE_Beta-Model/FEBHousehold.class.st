@@ -60,6 +60,23 @@ FEBHousehold >> availableTimePerStep [
 	^ availableTimePerStep
 ]
 
+{ #category : 'metrics' }
+FEBHousehold >> averageDistanceTo5ClosestOutlets [
+
+	| outletDistances |
+		
+	outletDistances := outlets collect: [ :each | each -> (self cell distanceTo: each cell) ].
+	outletDistances sort: [ :a :b | a value < b value ].
+	
+	^ ((outletDistances first: 5) collect: [ :assoc | assoc value ]) average asFloat
+]
+
+{ #category : 'metrics' }
+FEBHousehold >> averageDistanceToAllOutlets [
+
+	^ (outlets collect: [ :each | self cell distanceTo: each cell ]) average asFloat
+]
+
 { #category : 'as yet unclassified' }
 FEBHousehold >> beDesperateSaver [
 	<action>
@@ -290,6 +307,12 @@ FEBHousehold >> maximumDesiredQuantityOf: aFoodCategory [
 FEBHousehold >> moneyThreshold [
 
 	^ strategy moneyThreshold
+]
+
+{ #category : 'metrics' }
+FEBHousehold >> numberOfOutletsWithin30Min [
+
+	^ outlets count: [ :each | (self cell timeToTravelTo: each cell) <= 30 minutes ]
 ]
 
 { #category : 'accessing' }
