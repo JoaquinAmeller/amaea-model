@@ -14,7 +14,8 @@ Class {
 		'remainingTime',
 		'strategy',
 		'shoppingStrategy',
-		'dailyNeed'
+		'dailyNeed',
+		'consumptionHistory'
 	],
 	#classInstVars : [
 		'minHouseholdSize',
@@ -163,6 +164,8 @@ FEBHousehold >> consumeFood [
 			inventory extractOneUnitFromBatch: chosenBatch.
 			eatenCategories add: chosenBatch category ] ].
 	
+	consumptionHistory at: self currentTimeStep put: eatenCategories.
+	
 	self updateHungerMemoryAfterEating: eatenCategories.
 	
 	^ eatenCategories
@@ -235,6 +238,7 @@ FEBHousehold >> initialize [
 	self beMoneySaver.
 	
 	shoppingStrategy := FEBSimpleShoppingStrategy new.
+	consumptionHistory := Dictionary new
 	
 	
 ]
@@ -262,6 +266,27 @@ FEBHousehold >> inventory [
 FEBHousehold >> isDesperateSaver [
 
 	^ strategy isDesperateSaver
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isHavingHealthyDiet [
+	"Average consumption of at least one unit each of fruits & vegetables, meat, and staple food per day over the last 7 days"
+	
+	| numberOfDays foodConsumedInSevenDays foodNames allFoodCategoryNames |
+	
+	numberOfDays := 7 min: consumptionHistory size.
+	
+	foodConsumedInSevenDays := (0 to: (numberOfDays - 1)) flatCollect: [ :i |
+		consumptionHistory at: (self currentTimeStep - i) ].
+	
+	foodNames := foodConsumedInSevenDays collect: [ :category | category name ].
+	
+	"DANGER! This relies on foodPreferenceOrder to contain ALL the categories and not just some of them"
+	allFoodCategoryNames := (foodPreferenceOrder collect: [ :category | category name ]) asSet.
+	
+	^ allFoodCategoryNames allSatisfy: [ :name | 
+		(foodNames count: [ :each | each = name ]) >= 7 ].
+	
 ]
 
 { #category : 'testing' }
@@ -333,6 +358,21 @@ FEBHousehold >> pov [
 	| color |
 
 	self isSatisfied
+		ifTrue: [ color := CMColor green ]
+		ifFalse: [ color := CMColor red ].
+
+	^ CMPointOfView
+		color: color
+		shape: self shapeOfPovBasedOnStrategy
+		size: self sizeOfPovBasedOnHouseholdSize
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> povHealthyDiet [
+	<pov>
+	| color |
+
+	self isHavingHealthyDiet
 		ifTrue: [ color := CMColor green ]
 		ifFalse: [ color := CMColor red ].
 
