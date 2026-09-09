@@ -39,16 +39,13 @@ FEBHouseholdTest >> initializeFoodCategories [
 { #category : 'running' }
 FEBHouseholdTest >> setUp [
 
+	| model |
 	super setUp.
 	
-	"We must pass a random number generator because the initialize method requires it to randomly choose the household size. If this randomness is removed or if Cormas provides a default random number generator, this whole statement can be reduced to a simple FEBHousehold new"
-	household := FEBHousehold basicNew
-		randomNumberGenerator: Random new;
-		initialize;
-		yourself.
-	
-	self initializeFoodCategories.
-	household foodPreferenceOrder: { meat . rice . vegetables . dairy }.
+	model := FEBModel new
+		init.
+		
+	household := model households first.
 ]
 
 { #category : 'tests' }

@@ -3,7 +3,7 @@ Class {
 	#superclass : 'CMAgent',
 	#instVars : [
 		'inventory',
-		'foodPreferenceOrder',
+		'foodPreferenceProportions',
 		'satisfactionMemory',
 		'hungerMemory',
 		'outlets',
@@ -105,11 +105,13 @@ FEBHousehold >> beTimeSaver [
 { #category : 'as yet unclassified' }
 FEBHousehold >> buildShoppingList [
 
-	| shoppingList missingMeals category |
+	| shoppingList missingMeals category foodPreferenceOrder |
 	shoppingList := FEBShoppingList new.
 	
 	"First get essential meals. As many as we need to have food for 1 day"
 	missingMeals := (dailyNeed - self totalUsableFoodQuantity) max: 0.
+	
+	foodPreferenceOrder := foodPreferenceProportions orderedKeys.
 	
 	1 to: missingMeals do: [ :i |
 		category := foodPreferenceOrder at: ((i - 1) \\ foodPreferenceOrder size) + 1.
@@ -172,12 +174,16 @@ FEBHousehold >> consumeFood [
 ]
 
 { #category : 'accessing' }
-FEBHousehold >> foodPreferenceOrder: aCollection [
+FEBHousehold >> foodPreferenceProportions: aDictionary [
 
-	foodPreferenceOrder := aCollection.
+	| orderedDict |
+	orderedDict := (aDictionary associations sorted: [ :a :b | a value > b value ]) asOrderedDictionary.
+
+	foodPreferenceProportions := orderedDict.
 	
 	"Inventory is initialized when foodPreference is set because it needs to have food for one day, and we must specify the category of that food"
 	self initializeInventory. 
+	
 ]
 
 { #category : 'asserting' }
@@ -218,7 +224,7 @@ FEBHousehold >> initialize [
 		randomIntegerBetween: self class minHouseholdSize
 			and: self class maxHouseholdSize.
 	
-	foodPreferenceOrder := OrderedCollection new.
+	foodPreferenceProportions := OrderedDictionary new.
 		
 	satisfactionMemory := 2.
 	hungerMemory := 0.
@@ -251,7 +257,7 @@ FEBHousehold >> initializeInventory [
 	
 	"Since HH consume food before buying it and then buy food for next day, they must be created with enough food for one day (the first food consumption)."
 	inventory addBatch: (FEBFoodBatch
-		category: foodPreferenceOrder first
+		category: foodPreferenceProportions orderedKeys first
 		quantity: dailyNeed
 		fridge: false).
 ]
@@ -281,8 +287,8 @@ FEBHousehold >> isHavingHealthyDiet [
 	
 	foodNames := foodConsumedInSevenDays collect: [ :category | category name ].
 	
-	"DANGER! This relies on foodPreferenceOrder to contain ALL the categories and not just some of them"
-	allFoodCategoryNames := (foodPreferenceOrder collect: [ :category | category name ]) asSet.
+	"DANGER! This relies on foodPreferenceProportions to contain ALL the categories and not just some of them"
+	allFoodCategoryNames := (foodPreferenceProportions keys collect: [ :category | category name ]) asSet.
 	
 	^ allFoodCategoryNames allSatisfy: [ :name | 
 		(foodNames count: [ :each | each = name ]) >= 7 ].
@@ -385,7 +391,7 @@ FEBHousehold >> povHealthyDiet [
 { #category : 'as yet unclassified' }
 FEBHousehold >> preferenceRankingOf: aCategory [
 
-	^ foodPreferenceOrder
+	^ foodPreferenceProportions orderedKeys 
 		indexOf: aCategory
 		ifAbsent: [ self error: 'All categories must appear in the preference list' ]
 ]

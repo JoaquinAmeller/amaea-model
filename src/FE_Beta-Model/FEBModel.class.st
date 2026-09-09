@@ -80,25 +80,45 @@ FEBModel >> initializeAgents [
 FEBModel >> initializeFoodCategories [
 
 	foodCategories := OrderedCollection withAll: {
-		FEBFoodCategory
-			named: 'Meat'
-			shelfLifeInFridge: 5
-			outsideFridge: 2.
+		FEBFoodCategory new
+			name: 'Animal proteins';
+			shelfLifeInFridge: 5;
+			shelfLifeOutsideFridge: 2;
+			kilocaloriesPerPortion: 250;
+			proteinsPerPortion: 30;
+			yourself.
 			
-		FEBFoodCategory
-			named: 'Vegetables'
-			shelfLifeInFridge: 7
-			outsideFridge: 3.
+		FEBFoodCategory new
+			name: 'Fruits and vegetables';
+			shelfLifeInFridge: 7;
+			shelfLifeOutsideFridge: 3;
+			kilocaloriesPerPortion: 70;
+			proteinsPerPortion: 2;
+			yourself.
 			
-		FEBFoodCategory
-			named: 'Rice'
-			shelfLifeInFridge: 30
-			outsideFridge: 30.
+		FEBFoodCategory new
+			name: 'Staple food';
+			shelfLifeInFridge: 30;
+			shelfLifeOutsideFridge: 30;
+			kilocaloriesPerPortion: 190;
+			proteinsPerPortion: 4;
+			yourself.
 			
-		FEBFoodCategory
-			named: 'Dairy'
-			shelfLifeInFridge: 6
-			outsideFridge: 2
+		FEBFoodCategory new
+			name: 'Dairy';
+			shelfLifeInFridge: 6;
+			shelfLifeOutsideFridge: 2;
+			kilocaloriesPerPortion: 120;
+			proteinsPerPortion: 7;
+			yourself.
+			
+		FEBFoodCategory new
+			name: 'Processed food';
+			shelfLifeInFridge: 30;
+			shelfLifeOutsideFridge: 30;
+			kilocaloriesPerPortion: 750;
+			proteinsPerPortion: 9;
+			yourself.
 	}
 ]
 
@@ -107,19 +127,34 @@ FEBModel >> initializePreferences [
 
 	| preferenceA preferenceB preferenceC |
 	
-	preferenceA := #('Meat' 'Rice' 'Vegetables' 'Dairy')
-		collect: [ :name | self foodCategoryNamed: name ].
-		
-	preferenceB := #('Rice' 'Dairy' 'Vegetables' 'Meat')
-		collect: [ :name | self foodCategoryNamed: name ].
-		
-	preferenceC := #('Vegetables' 'Rice' 'Meat' 'Dairy')
-		collect: [ :name | self foodCategoryNamed: name ].
+	preferenceA := { "eats a lot of meat and dairy"
+		(self foodCategoryNamed: 'Animal proteins') -> 0.35 .
+		(self foodCategoryNamed: 'Fruits and vegetables') -> 0.15 .
+		(self foodCategoryNamed: 'Staple food') -> 0.15 .
+		(self foodCategoryNamed: 'Dairy') -> 0.3 .
+		(self foodCategoryNamed: 'Processed food') -> 0.05 .
+	} asDictionary.
+	
+	preferenceB := { "eats a lot of staple and processed food"
+		(self foodCategoryNamed: 'Animal proteins') -> 0.1 .
+		(self foodCategoryNamed: 'Fruits and vegetables') -> 0.1 .
+		(self foodCategoryNamed: 'Staple food') -> 0.4 .
+		(self foodCategoryNamed: 'Dairy') -> 0.1 .
+		(self foodCategoryNamed: 'Processed food') -> 0.3 .
+	} asDictionary.
+	
+	preferenceC := { "has a balanced diet"
+		(self foodCategoryNamed: 'Animal proteins') -> 0.2 .
+		(self foodCategoryNamed: 'Fruits and vegetables') -> 0.3 .
+		(self foodCategoryNamed: 'Staple food') -> 0.25 .
+		(self foodCategoryNamed: 'Dairy') -> 0.15 .
+		(self foodCategoryNamed: 'Processed food') -> 0.1 .
+	} asDictionary.
 
 	(self shuffled: self households) withIndexDo: [ :household :index |
-		index % 3 = 1 ifTrue: [ household foodPreferenceOrder: preferenceA copy ].
-		index % 3 = 2 ifTrue: [ household foodPreferenceOrder: preferenceB copy ].
-		index % 3 = 0 ifTrue: [ household foodPreferenceOrder: preferenceC copy ] ]
+		index % 3 = 1 ifTrue: [ household foodPreferenceProportions: preferenceA copy ].
+		index % 3 = 2 ifTrue: [ household foodPreferenceProportions: preferenceB copy ].
+		index % 3 = 0 ifTrue: [ household foodPreferenceProportions: preferenceC copy ] ]
 ]
 
 { #category : 'initialization' }

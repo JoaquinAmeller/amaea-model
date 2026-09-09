@@ -4,7 +4,9 @@ Class {
 	#instVars : [
 		'name',
 		'shelfLifeInFridge',
-		'shelfLifeOutsideFridge'
+		'shelfLifeOutsideFridge',
+		'kilocaloriesPerPortion',
+		'proteinsPerPortion'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
@@ -18,6 +20,18 @@ FEBFoodCategory class >> named: aString shelfLifeInFridge: aNumber outsideFridge
 		shelfLifeInFridge: aNumber;
 		shelfLifeOutsideFridge: anotherNumber;
 		yourself
+]
+
+{ #category : 'accessing' }
+FEBFoodCategory >> kilocaloriesPerPortion [
+
+	^ kilocaloriesPerPortion
+]
+
+{ #category : 'accessing' }
+FEBFoodCategory >> kilocaloriesPerPortion: anObject [
+
+	kilocaloriesPerPortion := anObject
 ]
 
 { #category : 'accessing' }
@@ -37,6 +51,18 @@ FEBFoodCategory >> printOn: aString [
 
 	super printOn: aString.
 	aString << ' (' << name << ')'
+]
+
+{ #category : 'accessing' }
+FEBFoodCategory >> proteinsPerPortion [
+
+	^ proteinsPerPortion
+]
+
+{ #category : 'accessing' }
+FEBFoodCategory >> proteinsPerPortion: anObject [
+
+	proteinsPerPortion := anObject
 ]
 
 { #category : 'as yet unclassified' }
