@@ -81,7 +81,7 @@ FEBFoodInventory >> findMergeableBatchFor: aBatch [
 { #category : 'as yet unclassified' }
 FEBFoodInventory >> freeFridgeSpace [
 	
-	^ fridgeCapacity - self quantityInFridge
+	^ (fridgeCapacity - self quantityInFridge) max: 0
 ]
 
 { #category : 'accessing' }

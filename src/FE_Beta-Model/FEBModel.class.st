@@ -69,6 +69,7 @@ FEBModel >> initializeAgents [
 	self create: 100 randomlyLocatedAloneEntitiesOfClass: FEBHousehold.
 
 	self initializePreferences.
+	self initializeSubstitutionList.
 	self initializeStrategies.
 
 	self create: 40 randomlyLocatedAloneEntitiesOfClass: FEBOutlet.
@@ -176,6 +177,22 @@ FEBModel >> initializeStrategies [
 	"Second part - from p*N to N (all other agents)"
 	((proportion * numberOfAgents) asInteger to: numberOfAgents) do: [ :i |
 		(shuffledAgents at: i) beTimeSaver ].
+]
+
+{ #category : 'initialization' }
+FEBModel >> initializeSubstitutionList [
+
+	| substitutionList |
+	
+	substitutionList := { 
+		(self foodCategoryNamed: 'Animal proteins') -> (self foodCategoryNamed: 'Dairy') .
+		(self foodCategoryNamed: 'Dairy') -> (self foodCategoryNamed: 'Staple food') .
+		(self foodCategoryNamed: 'Fruits and vegetables') -> (self foodCategoryNamed: 'Staple food') .
+		(self foodCategoryNamed: 'Staple food') -> (self foodCategoryNamed: 'Processed food')
+	} asDictionary.
+	
+	self households do: [ :each |
+		each substitutionList: substitutionList ]
 ]
 
 { #category : 'as yet unclassified' }

@@ -4,6 +4,7 @@ Class {
 	#instVars : [
 		'inventory',
 		'foodPreferenceProportions',
+		'substitutionList',
 		'satisfactionMemory',
 		'hungerMemory',
 		'outlets',
@@ -47,6 +48,40 @@ FEBHousehold class >> minHouseholdSize [
 FEBHousehold class >> minHouseholdSize: anObject [
 
 	minHouseholdSize := anObject
+]
+
+{ #category : 'adding' }
+FEBHousehold >> addEssentialMealsToTheShoppingList: aShoppingList [
+
+	| missingMeals remainingMeals quantity |
+	
+	missingMeals := (dailyNeed - self totalUsableFoodQuantity) max: 0.
+	remainingMeals := missingMeals.
+	
+	foodPreferenceProportions keysAndValuesDo: [ :category :proportion | 
+		remainingMeals > 0 ifTrue: [ 
+			quantity := (missingMeals * proportion) asInteger max: 1.
+			aShoppingList addEssentialNeedOf: category quantity: quantity.
+			remainingMeals := remainingMeals - quantity ] ]
+]
+
+{ #category : 'adding' }
+FEBHousehold >> addStorageNeedsToTheShoppingList: aShoppingList [
+
+	| storageHorizon availableMealsInStorage missingMeals remainingMeals quantity |
+	storageHorizon := 5.
+	
+	availableMealsInStorage := (self totalUsableFoodQuantity - dailyNeed) max: 0.
+	missingMeals := (dailyNeed * storageHorizon) - availableMealsInStorage.
+	remainingMeals := missingMeals.
+	
+	foodPreferenceProportions keysAndValuesDo: [ :category :proportion | 
+		remainingMeals > 0 ifTrue: [ 
+			quantity := (missingMeals * proportion) asInteger max: 1.
+			aShoppingList addStorageNeedOf: category quantity: quantity.
+			remainingMeals := remainingMeals - quantity ] ].
+	
+	self substitutePerishableFoodThatWontFitInFridge: aShoppingList
 ]
 
 { #category : 'as yet unclassified' }
@@ -105,22 +140,14 @@ FEBHousehold >> beTimeSaver [
 { #category : 'as yet unclassified' }
 FEBHousehold >> buildShoppingList [
 
-	| shoppingList missingMeals category foodPreferenceOrder |
+	| shoppingList |
 	shoppingList := FEBShoppingList new.
 	
 	"First get essential meals. As many as we need to have food for 1 day"
-	missingMeals := (dailyNeed - self totalUsableFoodQuantity) max: 0.
-	
-	foodPreferenceOrder := foodPreferenceProportions orderedKeys.
-	
-	1 to: missingMeals do: [ :i |
-		category := foodPreferenceOrder at: ((i - 1) \\ foodPreferenceOrder size) + 1.
-		shoppingList addEssentialNeedOf: category quantity: 1 ].
+	self addEssentialMealsToTheShoppingList: shoppingList.
 	
 	"Then get another day worth of food for storage"
-	1 to: dailyNeed do: [ :i |
-		category := foodPreferenceOrder at: ((i - 1) \\ foodPreferenceOrder size) + 1.
-		shoppingList addStorageNeedOf: category quantity: 1 ].
+	self addStorageNeedsToTheShoppingList: shoppingList.
 	
 	^ shoppingList
 	
@@ -171,6 +198,18 @@ FEBHousehold >> consumeFood [
 	self updateHungerMemoryAfterEating: eatenCategories.
 	
 	^ eatenCategories
+]
+
+{ #category : 'adding' }
+FEBHousehold >> findNonPerishableSubstitutionFor: aCategory [
+
+	| otherCategory |
+	otherCategory := substitutionList at: aCategory.
+		
+	[ otherCategory shouldBeStoredInFridge ] whileTrue: [ 
+		otherCategory := substitutionList at: otherCategory ].
+	
+	^ otherCategory 
 ]
 
 { #category : 'accessing' }
@@ -461,6 +500,41 @@ FEBHousehold >> step [
 	
 	inventory becomeOneDayOlder.
 
+]
+
+{ #category : 'adding' }
+FEBHousehold >> substitutePerishableFoodThatWontFitInFridge: aShoppingList [
+
+	| perishableCategories totalQuantityOfPerishable totalQuantityToSubstitute quantityToSubstitute otherCategory |
+	
+	perishableCategories := aShoppingList storageNeeds keys select: [ :category |
+		category shouldBeStoredInFridge ].
+	
+	totalQuantityOfPerishable := perishableCategories sum: [ :category |
+		aShoppingList storageNeedOf: category ].
+	
+	totalQuantityToSubstitute := (totalQuantityOfPerishable - inventory freeFridgeSpace) max: 0.
+	
+	"We sort them to make sure that we will be substituting the leass wanted categories first"
+	perishableCategories asOrderedCollection sort: [ :a :b |
+		(foodPreferenceProportions at: a) < (foodPreferenceProportions at: b) ].
+	
+	perishableCategories do: [ :category |
+		totalQuantityToSubstitute <= 0 ifTrue: [ ^ self ].
+		
+		quantityToSubstitute := totalQuantityToSubstitute min: (aShoppingList storageNeedOf: category).
+		otherCategory := self findNonPerishableSubstitutionFor: category.
+		
+		aShoppingList decreaseStorageNeedOf: category by: quantityToSubstitute.
+		aShoppingList addStorageNeedOf: otherCategory quantity: quantityToSubstitute.
+		
+		totalQuantityToSubstitute := totalQuantityToSubstitute - quantityToSubstitute ]
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> substitutionList: aDictionary [
+
+	substitutionList := aDictionary 
 ]
 
 { #category : 'as yet unclassified' }

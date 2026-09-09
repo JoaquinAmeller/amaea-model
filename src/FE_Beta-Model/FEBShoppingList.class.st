@@ -54,6 +54,17 @@ FEBShoppingList >> decreaseNeedOf: aCategory by: anInteger [
 ]
 
 { #category : 'as yet unclassified' }
+FEBShoppingList >> decreaseStorageNeedOf: aCategory by: anInteger [
+
+	| diff |
+	diff := (storageNeeds at: aCategory) - anInteger.
+	
+	diff < 0 ifTrue: [ self error: 'Trying to decrease more than we have!' ].
+	diff = 0 ifTrue: [ storageNeeds removeKey: aCategory ].
+	diff > 0 ifTrue: [ storageNeeds at: aCategory put: diff ]
+]
+
+{ #category : 'as yet unclassified' }
 FEBShoppingList >> essentialNeedOf: aCategory [ 
 	
 	^ essentialNeeds at: aCategory ifAbsent: [ 0 ]
