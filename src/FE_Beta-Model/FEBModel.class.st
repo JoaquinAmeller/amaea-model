@@ -22,7 +22,7 @@ FEBModel class >> prefix [
 ]
 
 { #category : 'probes' }
-FEBModel >> amountOfSpoledFoodInHouseholds [
+FEBModel >> amountOfSpoiledFoodInHouseholds [
 
 	<probeNamed: 'Amount of spoiled food in households' color: #brown>
 	^ self households sum: [ :h | h inventory amountOfFoodInTrashbin ]
@@ -196,6 +196,50 @@ FEBModel >> initializeSubstitutionList [
 ]
 
 { #category : 'probes' }
+FEBModel >> numberOfCaloricAdequatePeople [
+
+	<probeNamed: 'Number of caloric adequate people' color: #green>
+	
+	"caloricAdequacyScore can only be calculated after the first step, before that we assume everyone is adequate"
+	self currentTimeStep = 0 ifTrue: [ ^ self totalNumberOfPeople ].
+	
+	^ (self households select: #isCaloricAdequate ) sum: #householdSize 
+]
+
+{ #category : 'probes' }
+FEBModel >> numberOfCaloricExcessPeople [
+
+	<probeNamed: 'Number of caloric excess people' color: #purple >
+	
+	"caloricAdequacyScore can only be calculated after the first step, before that we assume everyone is adequate"
+	self currentTimeStep = 0 ifTrue: [ ^ 0 ].
+	
+	^ (self households select: #isCaloricExcess ) sum: #householdSize 
+]
+
+{ #category : 'probes' }
+FEBModel >> numberOfCaloricInadequatePeople [
+
+	<probeNamed: 'Number of caloric inadequate people' color: #red>
+	
+	"caloricAdequacyScore can only be calculated after the first step, before that we assume everyone is adequate"
+	self currentTimeStep = 0 ifTrue: [ ^ 0 ].
+	
+	^ (self households select: #isCaloricInadequate ) sum: #householdSize 
+]
+
+{ #category : 'probes' }
+FEBModel >> numberOfCaloricSeverelyInadequatePeople [
+
+	<probeNamed: 'Number of caloric severely inadequate people' color:  #'900B08'>
+	
+	"caloricAdequacyScore can only be calculated after the first step, before that we assume everyone is adequate"
+	self currentTimeStep = 0 ifTrue: [ ^ 0 ].
+	
+	^ (self households select: #isCaloricSeverelyInadequate ) sum: #householdSize 
+]
+
+{ #category : 'probes' }
 FEBModel >> numberOfFullPeople [
 
 	<probeNamed: 'Number of full people' color: #green>
@@ -218,6 +262,39 @@ FEBModel >> numberOfHungryPeople [
 ]
 
 { #category : 'probes' }
+FEBModel >> numberOfProteinAdequatePeople [
+
+	<probeNamed: 'Number of protein adequate people' color: #green>
+	
+	"caloricAdequacyScore can only be calculated after the first step, before that we assume everyone is adequate"
+	self currentTimeStep = 0 ifTrue: [ ^ self totalNumberOfPeople ].
+	
+	^ (self households select: #isProteinAdequate ) sum: #householdSize 
+]
+
+{ #category : 'probes' }
+FEBModel >> numberOfProteinInadequatePeople [
+
+	<probeNamed: 'Number of protein inadequate people' color: #red>
+	
+	"caloricAdequacyScore can only be calculated after the first step, before that we assume everyone is adequate"
+	self currentTimeStep = 0 ifTrue: [ ^ 0 ].
+	
+	^ (self households select: #isProteinInadequate ) sum: #householdSize 
+]
+
+{ #category : 'probes' }
+FEBModel >> numberOfProteinSeverelyInadequatePeople [
+
+	<probeNamed: 'Number of protein severely inadequate people' color:  #'900B08'>
+	
+	"caloricAdequacyScore can only be calculated after the first step, before that we assume everyone is adequate"
+	self currentTimeStep = 0 ifTrue: [ ^ 0 ].
+	
+	^ (self households select: #isProteinSeverelyInadequate ) sum: #householdSize 
+]
+
+{ #category : 'probes' }
 FEBModel >> numberOfUnsatisfiedPeople [
 
 	<probeNamed: 'Number of unsatisfied people' color: #orange>
@@ -232,27 +309,6 @@ FEBModel >> numberOfUnsatisfiedPeople [
 FEBModel >> outlets [
 
  ^ self @@ FEBOutlet .
-]
-
-{ #category : 'probes' }
-FEBModel >> percentageOfFullPeople [
-
-	<probeNamed: 'Percentage of full people' color: #green>
-	^ self numberOfFullPeople / self totalNumberOfPeople asFloat
-]
-
-{ #category : 'probes' }
-FEBModel >> percentageOfHungryPeople [
-
-	<probeNamed: 'Percentage of hungry people' color: #red>
-	^ self numberOfHungryPeople / self totalNumberOfPeople asFloat
-]
-
-{ #category : 'probes' }
-FEBModel >> percentageOfUnsatisfiedPeople [
-
-	<probeNamed: 'Percentage of unsatisfied people' color: #orange>
-	^ self numberOfUnsatisfiedPeople / self totalNumberOfPeople asFloat 
 ]
 
 { #category : 'as yet unclassified' }

@@ -163,6 +163,25 @@ FEBHousehold >> buyFoodBatches: batches for: moneySpent [
 	remainingMoney := remainingMoney - moneySpent.
 ]
 
+{ #category : 'accessing' }
+FEBHousehold >> caloricAdequacyColor [
+
+	consumptionHistory ifEmpty: [ ^ CMColor gray ].
+
+	self isCaloricSeverelyInadequate ifTrue: [ ^ CMColor red darker darker darker].
+	self isCaloricInadequate ifTrue: [ ^ CMColor red ].
+	self isCaloricAdequate ifTrue: [ ^ CMColor green ].
+	self isCaloricExcess ifTrue: [ ^ CMColor purple ].
+]
+
+{ #category : 'testing' }
+FEBHousehold >> caloricAdequacyScore [
+
+	| totalKilocaloriesConsumed |
+	totalKilocaloriesConsumed := consumptionHistory last sum: [ :foodCategory | foodCategory kilocaloriesPerPortion ].
+	^ totalKilocaloriesConsumed / (2000 * self householdSize)
+]
+
 { #category : 'as yet unclassified' }
 FEBHousehold >> chooseBatchForNextMeal [
 
@@ -306,6 +325,26 @@ FEBHousehold >> inventory [
 	^ inventory
 ]
 
+{ #category : 'testing' }
+FEBHousehold >> isCaloricAdequate [
+^ (self caloricAdequacyScore < 1.2) and: [ self caloricAdequacyScore >= 1 ].
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isCaloricExcess [
+^ self caloricAdequacyScore >= 1.2.
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isCaloricInadequate [
+^ (self caloricAdequacyScore < 1) and: [ self caloricAdequacyScore >= 0.8 ].
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isCaloricSeverelyInadequate [
+^ self caloricAdequacyScore < 0.8.
+]
+
 { #category : 'as yet unclassified' }
 FEBHousehold >> isDesperateSaver [
 
@@ -347,6 +386,21 @@ FEBHousehold >> isHungry [
 FEBHousehold >> isMoneySaver [
 
 	^ strategy isMoneySaver
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isProteinAdequate [
+^ self proteinAdequacyScore >= 1.
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isProteinInadequate [
+^ (self proteinAdequacyScore < 1) and: [ self proteinAdequacyScore >= 0.8 ].
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isProteinSeverelyInadequate [
+^ self proteinAdequacyScore < 0.8.
 ]
 
 { #category : 'as yet unclassified' }
@@ -398,13 +452,23 @@ FEBHousehold >> outlets: aCollection [
 	outlets := aCollection
 ]
 
-{ #category : 'accessing' }
+{ #category : 'pov' }
 FEBHousehold >> pov [
 	<pov>
 	^ self povSatietyIndicator 
 ]
 
-{ #category : 'accessing' }
+{ #category : 'pov' }
+FEBHousehold >> povCaloricAdequacyIndicator [
+	<pov>
+	
+	^ CMPointOfView
+		color: self caloricAdequacyColor 
+		shape: self shapeOfPovBasedOnStrategy
+		size: self sizeOfPovBasedOnHouseholdSize
+]
+
+{ #category : 'pov' }
 FEBHousehold >> povHealthyDiet [
 	<pov>
 	| color |
@@ -419,7 +483,17 @@ FEBHousehold >> povHealthyDiet [
 		size: self sizeOfPovBasedOnHouseholdSize
 ]
 
-{ #category : 'accessing' }
+{ #category : 'pov' }
+FEBHousehold >> povProteinAdequacyIndicator [
+	<pov>
+	
+	^ CMPointOfView
+		color: self proteinAdequacyColor 
+		shape: self shapeOfPovBasedOnStrategy
+		size: self sizeOfPovBasedOnHouseholdSize
+]
+
+{ #category : 'pov' }
 FEBHousehold >> povSatietyIndicator [
 	<pov>
 	
@@ -435,6 +509,24 @@ FEBHousehold >> preferenceRankingOf: aCategory [
 	^ foodPreferenceProportions orderedKeys 
 		indexOf: aCategory
 		ifAbsent: [ self error: 'All categories must appear in the preference list' ]
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> proteinAdequacyColor [
+
+	consumptionHistory ifEmpty: [ ^ CMColor gray ].
+
+	self isProteinSeverelyInadequate ifTrue: [ ^ CMColor red darker darker darker].
+	self isProteinInadequate ifTrue: [ ^ CMColor red ].
+	self isProteinAdequate ifTrue: [ ^ CMColor green ].
+]
+
+{ #category : 'testing' }
+FEBHousehold >> proteinAdequacyScore [
+
+	| totalProteinsConsumed |
+	totalProteinsConsumed := consumptionHistory last sum: [ :foodCategory | foodCategory proteinsPerPortion ].
+	^ totalProteinsConsumed / (60 * self householdSize)
 ]
 
 { #category : 'accessing' }
