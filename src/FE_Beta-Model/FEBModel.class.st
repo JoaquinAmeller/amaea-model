@@ -21,7 +21,7 @@ FEBModel class >> prefix [
 	^ 'FEB'
 ]
 
-{ #category : 'as yet unclassified' }
+{ #category : 'probes' }
 FEBModel >> amountOfSpoledFoodInHouseholds [
 
 	<probeNamed: 'Amount of spoiled food in households' color: #brown>
@@ -195,18 +195,37 @@ FEBModel >> initializeSubstitutionList [
 		each substitutionList: substitutionList ]
 ]
 
-{ #category : 'as yet unclassified' }
+{ #category : 'probes' }
+FEBModel >> numberOfFullPeople [
+
+	<probeNamed: 'Number of full people' color: #green>
+	
+	"satietyScore can only be calculated after the first step, before that we assume everyone is full"
+	self currentTimeStep = 0 ifTrue: [ ^ self totalNumberOfPeople ].
+	
+	^ (self households select: #isFull ) sum: #householdSize 
+]
+
+{ #category : 'probes' }
 FEBModel >> numberOfHungryPeople [
 
 	<probeNamed: 'Number of hungry people' color: #red>
+	
+	"satietyScore can only be calculated after the first step, before that we assume nobody is hungry"
+	self currentTimeStep = 0 ifTrue: [ ^ 0].
+	
 	^ (self households select: #isHungry ) sum: #householdSize 
 ]
 
-{ #category : 'as yet unclassified' }
-FEBModel >> numberOfSatisfiedPeople [
+{ #category : 'probes' }
+FEBModel >> numberOfUnsatisfiedPeople [
 
-	<probeNamed: 'Number of satisfied people' color: #green>
-	^ (self households select: #isSatisfied) sum: #householdSize
+	<probeNamed: 'Number of unsatisfied people' color: #orange>
+	
+	"satietyScore can only be calculated after the first step, before that we assume nobody is unsatisfied"
+	self currentTimeStep = 0 ifTrue: [ ^ 0 ].
+	
+	^ (self households select: #isUnsatisfied ) sum: #householdSize 
 ]
 
 { #category : 'accessing' }
@@ -215,18 +234,25 @@ FEBModel >> outlets [
  ^ self @@ FEBOutlet .
 ]
 
-{ #category : 'as yet unclassified' }
+{ #category : 'probes' }
+FEBModel >> percentageOfFullPeople [
+
+	<probeNamed: 'Percentage of full people' color: #green>
+	^ self numberOfFullPeople / self totalNumberOfPeople asFloat
+]
+
+{ #category : 'probes' }
 FEBModel >> percentageOfHungryPeople [
 
 	<probeNamed: 'Percentage of hungry people' color: #red>
-	^ self numberOfHungryPeople / self totalNumberOfPeople
+	^ self numberOfHungryPeople / self totalNumberOfPeople asFloat
 ]
 
-{ #category : 'as yet unclassified' }
-FEBModel >> percentageOfSatisfiedPeople [
+{ #category : 'probes' }
+FEBModel >> percentageOfUnsatisfiedPeople [
 
-	<probeNamed: 'Percentage of satisfied people' color: #green>
-	^ self numberOfSatisfiedPeople / self totalNumberOfPeople
+	<probeNamed: 'Percentage of unsatisfied people' color: #orange>
+	^ self numberOfUnsatisfiedPeople / self totalNumberOfPeople asFloat 
 ]
 
 { #category : 'as yet unclassified' }

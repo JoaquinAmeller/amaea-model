@@ -193,7 +193,7 @@ FEBHousehold >> consumeFood [
 			inventory extractOneUnitFromBatch: chosenBatch.
 			eatenCategories add: chosenBatch category ] ].
 	
-	consumptionHistory at: self currentTimeStep put: eatenCategories.
+	consumptionHistory add: eatenCategories.
 	
 	self updateHungerMemoryAfterEating: eatenCategories.
 	
@@ -232,7 +232,6 @@ FEBHousehold >> goShopping [
 	self resetRemainingTimeAndMoney.
 	shoppingList := self buildShoppingList.
 	shoppingStrategy shopFor: self using: shoppingList.
-	self updateSatisfactionMemory.
 	self reconsiderPreference.
 ]
 
@@ -283,7 +282,7 @@ FEBHousehold >> initialize [
 	self beMoneySaver.
 	
 	shoppingStrategy := FEBSimpleShoppingStrategy new.
-	consumptionHistory := Dictionary new
+	consumptionHistory := OrderedCollection new
 	
 	
 ]
@@ -314,6 +313,11 @@ FEBHousehold >> isDesperateSaver [
 ]
 
 { #category : 'testing' }
+FEBHousehold >> isFull [
+^ self satietyScore >= 1
+]
+
+{ #category : 'testing' }
 FEBHousehold >> isHavingHealthyDiet [
 	"Average consumption of at least one unit each of fruits & vegetables, meat, and staple food per day over the last 7 days"
 	
@@ -336,7 +340,7 @@ FEBHousehold >> isHavingHealthyDiet [
 
 { #category : 'testing' }
 FEBHousehold >> isHungry [
-^ hungerMemory > 0
+^ self satietyScore < 0.8
 ]
 
 { #category : 'as yet unclassified' }
@@ -351,18 +355,15 @@ FEBHousehold >> isRichBastard [
 	^ strategy isRichBastard
 ]
 
-{ #category : 'testing' }
-FEBHousehold >> isSatisfied [
-
-	^ self isHungry not
-		and: [ remainingMoney >= (availableMoneyPerStep * self moneyThreshold)
-			and: [ remainingTime >= (availableTimePerStep * self timeThreshold) ] ]
-]
-
 { #category : 'as yet unclassified' }
 FEBHousehold >> isTimeSaver [
 
 	^ strategy isTimeSaver
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isUnsatisfied [
+^ (self satietyScore < 1) and: [self satietyScore > 0.8 ]
 ]
 
 { #category : 'accessing' }
@@ -400,16 +401,7 @@ FEBHousehold >> outlets: aCollection [
 { #category : 'accessing' }
 FEBHousehold >> pov [
 	<pov>
-	| color |
-
-	self isSatisfied
-		ifTrue: [ color := CMColor green ]
-		ifFalse: [ color := CMColor red ].
-
-	^ CMPointOfView
-		color: color
-		shape: self shapeOfPovBasedOnStrategy
-		size: self sizeOfPovBasedOnHouseholdSize
+	^ self povSatietyIndicator 
 ]
 
 { #category : 'accessing' }
@@ -423,6 +415,16 @@ FEBHousehold >> povHealthyDiet [
 
 	^ CMPointOfView
 		color: color
+		shape: self shapeOfPovBasedOnStrategy
+		size: self sizeOfPovBasedOnHouseholdSize
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> povSatietyIndicator [
+	<pov>
+	
+	^ CMPointOfView
+		color: self satietyIndicatorColor 
 		shape: self shapeOfPovBasedOnStrategy
 		size: self sizeOfPovBasedOnHouseholdSize
 ]
@@ -464,6 +466,21 @@ FEBHousehold >> resetRemainingTimeAndMoney [
 
 	remainingTime := availableTimePerStep.
 	remainingMoney := availableMoneyPerStep.
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> satietyIndicatorColor [
+
+	consumptionHistory ifEmpty: [ ^ CMColor gray ].
+
+	self isHungry ifTrue: [ ^ CMColor red ].
+	self isUnsatisfied ifTrue: [ ^ CMColor orange ].
+	self isFull ifTrue: [ ^ CMColor green ].
+]
+
+{ #category : 'testing' }
+FEBHousehold >> satietyScore [
+^ consumptionHistory last size / dailyNeed 
 ]
 
 { #category : 'accessing' }
@@ -557,12 +574,4 @@ FEBHousehold >> updateHungerMemoryAfterEating: aCollectionOfCategories [
 	aCollectionOfCategories size < dailyNeed 
 		ifTrue: [ hungerMemory := hungerMemory + 1 ]
 		ifFalse: [ hungerMemory := 0 ]
-]
-
-{ #category : 'as yet unclassified' }
-FEBHousehold >> updateSatisfactionMemory [
-
-	self isSatisfied
-		ifTrue: [ satisfactionMemory := satisfactionMemory + 1 ] 
-		ifFalse: [ satisfactionMemory := 0 ]
 ]
