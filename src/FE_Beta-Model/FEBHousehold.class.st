@@ -178,6 +178,8 @@ FEBHousehold >> caloricAdequacyColor [
 FEBHousehold >> caloricAdequacyScore [
 
 	| totalKilocaloriesConsumed |
+	consumptionHistory ifEmpty: [ ^ 1 ].
+	
 	totalKilocaloriesConsumed := consumptionHistory last sum: [ :foodCategory | foodCategory kilocaloriesPerPortion ].
 	^ totalKilocaloriesConsumed / (2000 * self householdSize)
 ]
@@ -518,6 +520,8 @@ FEBHousehold >> proteinAdequacyColor [
 FEBHousehold >> proteinAdequacyScore [
 
 	| totalProteinsConsumed |
+	consumptionHistory ifEmpty: [ ^ 1 ].
+	
 	totalProteinsConsumed := consumptionHistory last sum: [ :foodCategory | foodCategory proteinsPerPortion ].
 	^ totalProteinsConsumed / (60 * self householdSize)
 ]
@@ -565,7 +569,8 @@ FEBHousehold >> satietyIndicatorColor [
 
 { #category : 'testing' }
 FEBHousehold >> satietyScore [
-^ consumptionHistory last size / dailyNeed 
+	consumptionHistory ifEmpty: [ ^ 1 ].
+	^ consumptionHistory last size / dailyNeed 
 ]
 
 { #category : 'accessing' }
