@@ -22,7 +22,8 @@ Class {
 		'minHouseholdSize',
 		'maxHouseholdSize',
 		'availableMoneyPerStep',
-		'availableTimePerStep'
+		'availableTimePerStep',
+		'fridgeCapacity'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
@@ -50,6 +51,18 @@ FEBHousehold class >> availableTimePerStep [
 FEBHousehold class >> availableTimePerStep: anObject [
 
 	availableTimePerStep := anObject
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> fridgeCapacity [
+	<parameterIntegerMin: 0 max: 10000 default: 6>
+	^ fridgeCapacity
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> fridgeCapacity: anObject [
+
+	fridgeCapacity := anObject
 ]
 
 { #category : 'accessing' }
@@ -344,7 +357,7 @@ FEBHousehold >> initialize [
 FEBHousehold >> initializeInventory [
 
 	inventory := FEBFoodInventory new.
-	inventory fridgeCapacity: (self randomIntegerBetween: 0 and: 6).
+	inventory fridgeCapacity: self class fridgeCapacity.
 	
 	"Since HH consume food before buying it and then buy food for next day, they must be created with enough food for one day (the first food consumption)."
 	inventory addBatch: (FEBFoodBatch
