@@ -31,6 +31,20 @@ FEBModel >> amountOfSpoiledFoodInHouseholds [
 ]
 
 { #category : 'probes' }
+FEBModel >> averageCaloricAdequacyScore [
+
+	<probeNamed: 'Average caloric adequacy score' color: #gold>
+	^ (self households collect: #caloricAdequacyScore) average asFloat
+]
+
+{ #category : 'probes' }
+FEBModel >> averageProteinAdequacyScore [
+
+	<probeNamed: 'Average protein adequacy score' color: #blue>
+	^ (self households collect: #proteinAdequacyScore) average asFloat
+]
+
+{ #category : 'probes' }
 FEBModel >> averageSatietyScore [
 
 	<probeNamed: 'Average satiety score' color: #green>
