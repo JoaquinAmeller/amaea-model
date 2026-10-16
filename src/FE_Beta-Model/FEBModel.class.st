@@ -30,6 +30,13 @@ FEBModel >> amountOfSpoiledFoodInHouseholds [
 	^ self households sum: [ :h | h inventory amountOfFoodInTrashbin ]
 ]
 
+{ #category : 'probes' }
+FEBModel >> demand [
+
+	<probeNamed: 'Demand' color:  #'0080FE'>
+	^ self households sum: [ :each | each dailyNeed ]
+]
+
 { #category : 'accessing' }
 FEBModel >> foodCategories [
 
@@ -344,6 +351,13 @@ FEBModel >> step [
 	<control>
 	(self @@ FEBHousehold) shuffled do: #step.
 	(self @@ FEBOutlet) shuffled do: #step.
+]
+
+{ #category : 'probes' }
+FEBModel >> supply [
+
+	<probeNamed: 'Supply' color:  #'E5B80B'>
+	^ self outlets sum: [ :each | each inventorySize ]
 ]
 
 { #category : 'as yet unclassified' }

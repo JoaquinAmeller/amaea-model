@@ -221,6 +221,12 @@ FEBHousehold >> consumeFood [
 	^ eatenCategories
 ]
 
+{ #category : 'accessing' }
+FEBHousehold >> dailyNeed [
+
+	^ dailyNeed
+]
+
 { #category : 'adding' }
 FEBHousehold >> findNonPerishableSubstitutionFor: aCategory [
 

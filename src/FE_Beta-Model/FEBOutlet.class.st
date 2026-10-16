@@ -34,6 +34,12 @@ FEBOutlet >> initializePrices [
 ]
 
 { #category : 'as yet unclassified' }
+FEBOutlet >> inventorySize [
+
+	^ inventory totalQuantity 
+]
+
+{ #category : 'as yet unclassified' }
 FEBOutlet >> pov [
 	<pov>
 	
