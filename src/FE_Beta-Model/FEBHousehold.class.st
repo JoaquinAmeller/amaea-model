@@ -20,11 +20,37 @@ Class {
 	],
 	#classInstVars : [
 		'minHouseholdSize',
-		'maxHouseholdSize'
+		'maxHouseholdSize',
+		'availableMoneyPerStep',
+		'availableTimePerStep'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
 }
+
+{ #category : 'accessing' }
+FEBHousehold class >> availableMoneyPerStep [
+	<parameterIntegerMin: 1 max: 10000 default: 100>
+	^ availableMoneyPerStep
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> availableMoneyPerStep: anObject [
+
+	availableMoneyPerStep := anObject
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> availableTimePerStep [
+	<parameterFloatMin: 0 max: 24 default: 2>
+	^ availableTimePerStep
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> availableTimePerStep: anObject [
+
+	availableTimePerStep := anObject
+]
 
 { #category : 'accessing' }
 FEBHousehold class >> maxHouseholdSize [
@@ -298,8 +324,8 @@ FEBHousehold >> initialize [
 	dailyNeed := 3 * householdSize. 
 	
 	"available for getting food"
-	availableMoneyPerStep := 100.
-	availableTimePerStep := 2 hours.
+	availableMoneyPerStep := self class availableMoneyPerStep.
+	availableTimePerStep := self class availableTimePerStep hours.
 	
 	"We need to do this to make sure that everyone is satisfied at init -> for the probe to work"
 	self resetRemainingTimeAndMoney.
