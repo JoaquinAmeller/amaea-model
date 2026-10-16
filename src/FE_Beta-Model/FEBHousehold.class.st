@@ -453,12 +453,6 @@ FEBHousehold >> outlets: aCollection [
 ]
 
 { #category : 'pov' }
-FEBHousehold >> pov [
-	<pov>
-	^ self povSatietyIndicator 
-]
-
-{ #category : 'pov' }
 FEBHousehold >> povCaloricAdequacyIndicator [
 	<pov>
 	
