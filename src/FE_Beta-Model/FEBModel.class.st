@@ -4,7 +4,8 @@ Class {
 	#instVars : [
 		'listOfOutlets',
 		'foodCategories',
-		'numberOfHouseholds'
+		'numberOfHouseholds',
+		'numberOfOutlets'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
@@ -74,7 +75,7 @@ FEBModel >> initializeAgents [
 	self initializeSubstitutionList.
 	self initializeStrategies.
 
-	self create: 40 randomlyLocatedAloneEntitiesOfClass: FEBOutlet.
+	self create: numberOfOutlets randomlyLocatedAloneEntitiesOfClass: FEBOutlet.
 
 	self households do: [ :each | each outlets: self outlets ]
 ]
@@ -273,6 +274,18 @@ FEBModel >> numberOfHungryPeople [
 	self currentTimeStep = 0 ifTrue: [ ^ 0].
 	
 	^ (self households select: #isHungry ) sum: #householdSize 
+]
+
+{ #category : 'accessing' }
+FEBModel >> numberOfOutlets [
+	<parameterIntegerMin: 0 max: 1000 default: 40>
+	^ numberOfOutlets
+]
+
+{ #category : 'accessing' }
+FEBModel >> numberOfOutlets: anObject [
+
+	numberOfOutlets := anObject
 ]
 
 { #category : 'probes' }
