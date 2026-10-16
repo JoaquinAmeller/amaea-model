@@ -587,6 +587,9 @@ FEBHousehold >> sizeOfPovBasedOnHouseholdSize [
 	| min max |
 	min := self class minHouseholdSize.
 	max := self class maxHouseholdSize.
+	
+	min = max ifTrue: [ ^ 1 ].
+	
 	^ 0.5 + (householdSize - min / (max - min) asFloat * 0.5)
 ]
 
