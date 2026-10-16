@@ -3,7 +3,8 @@ Class {
 	#superclass : 'CMModel',
 	#instVars : [
 		'listOfOutlets',
-		'foodCategories'
+		'foodCategories',
+		'numberOfHouseholds'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
@@ -67,7 +68,7 @@ FEBHousehold activePovSelector: #povHealthyDiet
 { #category : 'as yet unclassified' }
 FEBModel >> initializeAgents [
 
-	self create: 100 randomlyLocatedAloneEntitiesOfClass: FEBHousehold.
+	self create: numberOfHouseholds randomlyLocatedAloneEntitiesOfClass: FEBHousehold.
 
 	self initializePreferences.
 	self initializeSubstitutionList.
@@ -249,6 +250,18 @@ FEBModel >> numberOfFullPeople [
 	self currentTimeStep = 0 ifTrue: [ ^ self totalNumberOfPeople ].
 	
 	^ (self households select: #isFull ) sum: #householdSize 
+]
+
+{ #category : 'accessing' }
+FEBModel >> numberOfHouseholds [
+	<parameterIntegerMin: 0 max: 1000 default: 100>
+	^ numberOfHouseholds
+]
+
+{ #category : 'accessing' }
+FEBModel >> numberOfHouseholds: anObject [
+
+	numberOfHouseholds := anObject
 ]
 
 { #category : 'probes' }
