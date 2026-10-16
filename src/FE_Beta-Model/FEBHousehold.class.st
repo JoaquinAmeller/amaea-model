@@ -364,8 +364,7 @@ FEBHousehold >> isHavingHealthyDiet [
 	
 	numberOfDays := 7 min: consumptionHistory size.
 	
-	foodConsumedInSevenDays := (0 to: (numberOfDays - 1)) flatCollect: [ :i |
-		consumptionHistory at: (self currentTimeStep - i) ].
+	foodConsumedInSevenDays := (consumptionHistory last: numberOfDays) flatCollect: [ :each | each ].
 	
 	foodNames := foodConsumedInSevenDays collect: [ :category | category name ].
 	
