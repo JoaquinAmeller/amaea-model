@@ -7,9 +7,24 @@ Class {
 		'healthyFoodInventory',
 		'prices'
 	],
+	#classInstVars : [
+		'restockAmount'
+	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
 }
+
+{ #category : 'accessing' }
+FEBOutlet class >> restockAmount [
+	<parameterIntegerMin: 10 max: 10000 step: 10 default: 200>
+	^ restockAmount
+]
+
+{ #category : 'accessing' }
+FEBOutlet class >> restockAmount: anObject [
+
+	restockAmount := anObject
+]
 
 { #category : 'initialization' }
 FEBOutlet >> initialize [
@@ -71,10 +86,16 @@ FEBOutlet >> restock [
 		
 		batch := FEBFoodBatch
 			category: category
-			quantity: (self randomIntegerBetween: 1 and: 20)
+			quantity: self restockAmount / 10
 			fridge: category shouldBeStoredInFridge.
 			
 		inventory addBatch: batch ]
+]
+
+{ #category : 'accessing' }
+FEBOutlet >> restockAmount [
+	"The class side method is a parameter defining a constant number. This method can be changed later to introduce some fancy restock logic"
+	^ self class restockAmount
 ]
 
 { #category : 'accessing' }

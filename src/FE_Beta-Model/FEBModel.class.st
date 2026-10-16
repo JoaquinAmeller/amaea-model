@@ -362,12 +362,19 @@ FEBModel >> step [
 
 { #category : 'probes' }
 FEBModel >> supply [
-
+	"This only includes the food that was restocked and NOT the food that still remains in the inventory"
 	<probeNamed: 'Supply' color:  #'E5B80B'>
-	^ self outlets sum: [ :each | each inventorySize ]
+	^ self outlets sum: [ :each | each restockAmount ]
 ]
 
 { #category : 'as yet unclassified' }
 FEBModel >> totalNumberOfPeople [
 ^ self households sum: #householdSize 
+]
+
+{ #category : 'probes' }
+FEBModel >> totalSupply [
+	"This includes the food that was restocked as well as the food that still remains in the inventory"
+	<probeNamed: 'Total supply' color:  #'E5B80B'>
+	^ self outlets sum: [ :each | each inventorySize ]
 ]
