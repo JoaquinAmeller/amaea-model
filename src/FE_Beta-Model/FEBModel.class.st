@@ -31,6 +31,13 @@ FEBModel >> amountOfSpoiledFoodInHouseholds [
 ]
 
 { #category : 'probes' }
+FEBModel >> averageSatietyScore [
+
+	<probeNamed: 'Average satiety score' color: #green>
+	^ (self households collect: #satietyScore) average asFloat
+]
+
+{ #category : 'probes' }
 FEBModel >> demand [
 
 	<probeNamed: 'Demand' color:  #'0080FE'>
