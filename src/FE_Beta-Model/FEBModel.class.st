@@ -91,7 +91,7 @@ FEBModel >> init [
 	self initializeFoodCategories.
 	self initializeAgents.
 
-FEBHousehold activePovSelector: #povHealthyDiet 
+FEBHousehold activePovSelector: #povSatietyIndicator 
 ]
 
 { #category : 'as yet unclassified' }
