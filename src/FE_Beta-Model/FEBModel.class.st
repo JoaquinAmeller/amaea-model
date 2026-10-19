@@ -95,6 +95,35 @@ FEBHousehold activePovSelector: #povSatietyIndicator
 ]
 
 { #category : 'as yet unclassified' }
+FEBModel >> initUnconstraintedScenario [
+	<init>
+	| plots |
+
+	"Model parameters"
+	numberOfHouseholds  := 2.
+	numberOfOutlets := 80.
+
+	"Entity class parameters"
+	FEBHousehold availableMoneyPerStep: 500.
+	FEBHousehold availableTimePerStep: 24.
+	FEBHousehold fridgeCapacity: 100.
+	FEBOutlet restockAmount: 300.
+	
+	self
+		createGridNumberOfRows: 30
+		numberOfColumns: 30
+		neighbourhood: 8
+		closed: true.
+		
+	plots := self @@ FEBCell.
+	
+	self initializeFoodCategories.
+	self initializeAgents.
+
+FEBHousehold activePovSelector: #povSatietyIndicator 
+]
+
+{ #category : 'as yet unclassified' }
 FEBModel >> initializeAgents [
 
 	self create: numberOfHouseholds randomlyLocatedAloneEntitiesOfClass: FEBHousehold.
