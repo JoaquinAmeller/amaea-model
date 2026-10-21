@@ -65,6 +65,17 @@ FEBOutlet >> pov [
 ]
 
 { #category : 'as yet unclassified' }
+FEBOutlet >> povImage [
+	<pov>
+	
+	^ CMPointOfView new
+		tile: FEBTileset outlet;
+		shape: #square;
+		size: 1;
+		yourself.
+]
+
+{ #category : 'as yet unclassified' }
 FEBOutlet >> pricePerUnitFor: aCategory [
 
 	^ prices at: aCategory 

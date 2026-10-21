@@ -101,7 +101,7 @@ FEBModel >> initUnconstraintedScenario [
 
 	"Model parameters"
 	numberOfHouseholds  := 2.
-	numberOfOutlets := 80.
+	numberOfOutlets := 20.
 
 	"Entity class parameters"
 	FEBHousehold availableMoneyPerStep: 500.
@@ -110,8 +110,8 @@ FEBModel >> initUnconstraintedScenario [
 	FEBOutlet restockAmount: 300.
 	
 	self
-		createGridNumberOfRows: 30
-		numberOfColumns: 30
+		createGridNumberOfRows: 5
+		numberOfColumns: 5
 		neighbourhood: 8
 		closed: true.
 		
@@ -120,7 +120,8 @@ FEBModel >> initUnconstraintedScenario [
 	self initializeFoodCategories.
 	self initializeAgents.
 
-FEBHousehold activePovSelector: #povSatietyIndicator 
+	FEBHousehold activePovSelector: #povSatietyIndicator.
+	FEBOutlet activePovSelector: #povImage
 ]
 
 { #category : 'as yet unclassified' }
