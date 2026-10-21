@@ -4,7 +4,8 @@ Class {
 	#instVars : [
 		'batches',
 		'fridgeCapacity',
-		'trashbin'
+		'trashbin',
+		'inventoryHistory'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
@@ -48,6 +49,7 @@ FEBFoodInventory >> batchesOfCategory: aCategory [
 { #category : 'as yet unclassified' }
 FEBFoodInventory >> becomeOneDayOlder [
 
+	self recordInventoryHistory.
 	batches do: [ :each | each becomeOneDayOlder ].
 	self removeExpiredBatched
 ]
@@ -120,6 +122,7 @@ FEBFoodInventory >> initialize [
 	super initialize.
 	batches := OrderedCollection new.
 	trashbin := OrderedCollection new.
+	inventoryHistory := OrderedCollection new.
 	fridgeCapacity := 0
 ]
 
@@ -174,6 +177,20 @@ FEBFoodInventory >> quantityInFridge [
 	^ (batches select: [ :each | each isInFridge ])
 		sum: [ :each | each quantity ]
 		ifEmpty: [ 0 ]
+]
+
+{ #category : 'as yet unclassified' }
+FEBFoodInventory >> recordInventoryHistory [
+
+	| record |
+	record := Dictionary new.
+	
+	batches do: [ :batch |
+		(record at: batch category
+			update: [ :v | v + batch quantity ]
+			initial: [ batch quantity ]) ].
+	
+	inventoryHistory add: record
 ]
 
 { #category : 'removing' }
