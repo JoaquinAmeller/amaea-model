@@ -484,7 +484,7 @@ FEBHousehold >> isTimeSaver [
 ]
 
 { #category : 'testing' }
-FEBHousehold >> isUnsatisfied [
+FEBHousehold >> isUnsatiated [
 ^ (self satietyScore < 1) and: [self satietyScore > 0.8 ]
 ]
 
@@ -622,7 +622,7 @@ FEBHousehold >> satietyIndicatorColor [
 	consumptionHistory ifEmpty: [ ^ CMColor gray ].
 
 	self isHungry ifTrue: [ ^ CMColor red ].
-	self isUnsatisfied ifTrue: [ ^ CMColor orange ].
+	self isUnsatiated ifTrue: [ ^ CMColor orange ].
 	self isFull ifTrue: [ ^ CMColor green ].
 ]
 

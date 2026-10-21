@@ -380,14 +380,14 @@ FEBModel >> numberOfProteinSeverelyInadequatePeople [
 ]
 
 { #category : 'probes' }
-FEBModel >> numberOfUnsatisfiedPeople [
+FEBModel >> numberOfUnsatiatedPeople [
 
-	<probeNamed: 'Number of unsatisfied people' color: #orange>
+	<probeNamed: 'Number of unsatiated people' color: #orange>
 	
-	"satietyScore can only be calculated after the first step, before that we assume nobody is unsatisfied"
+	"satietyScore can only be calculated after the first step, before that we assume nobody is unsatiated"
 	self currentTimeStep = 0 ifTrue: [ ^ 0 ].
 	
-	^ (self households select: #isUnsatisfied ) sum: #householdSize 
+	^ (self households select: #isUnsatiated ) sum: #householdSize 
 ]
 
 { #category : 'accessing' }
