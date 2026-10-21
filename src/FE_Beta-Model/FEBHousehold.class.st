@@ -15,6 +15,7 @@ Class {
 		'remainingTime',
 		'strategy',
 		'shoppingStrategy',
+		'consumptionStrategy',
 		'dailyNeed',
 		'consumptionHistory'
 	],
@@ -226,18 +227,15 @@ FEBHousehold >> caloricAdequacyScore [
 { #category : 'as yet unclassified' }
 FEBHousehold >> chooseBatchForNextMeal [
 
-	| candidates sortedCandidates |
+	| candidates |
 	candidates := inventory nonExpiredBatches
 		select: [ :each | each isNotEmpty ].
 		
 	candidates ifEmpty: [ ^ nil ].
 	
-	sortedCandidates := candidates sorted: [ :a :b |
-		a remainingDays < b remainingDays or: [ 
-			a remainingDays = b remainingDays and: [ 
-				(self preferenceRankingOf: a category) < (self preferenceRankingOf: b category) ] ] ].
-	
-	^ sortedCandidates first
+	^ consumptionStrategy
+		chooseBatchForNextMealFrom: candidates
+		basedOn: foodPreferenceProportions
 ]
 
 { #category : 'as yet unclassified' }
@@ -319,7 +317,7 @@ FEBHousehold >> householdSize [
 	^ householdSize
 ]
 
-{ #category : 'accessing' }
+{ #category : 'initialization' }
 FEBHousehold >> initialize [
 
 	super initialize.
@@ -348,6 +346,8 @@ FEBHousehold >> initialize [
 	self beMoneySaver.
 	
 	shoppingStrategy := FEBSimpleShoppingStrategy new.
+	consumptionStrategy := FEBNoSpoilWeirdoStrategy new.
+	
 	consumptionHistory := OrderedCollection new
 	
 	
@@ -541,14 +541,6 @@ FEBHousehold >> povSatietyIndicator [
 		color: self satietyIndicatorColor 
 		shape: self shapeOfPovBasedOnStrategy
 		size: self sizeOfPovBasedOnHouseholdSize
-]
-
-{ #category : 'as yet unclassified' }
-FEBHousehold >> preferenceRankingOf: aCategory [
-
-	^ foodPreferenceProportions orderedKeys 
-		indexOf: aCategory
-		ifAbsent: [ self error: 'All categories must appear in the preference list' ]
 ]
 
 { #category : 'accessing' }
