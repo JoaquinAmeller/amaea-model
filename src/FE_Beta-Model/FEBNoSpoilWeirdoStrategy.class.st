@@ -6,6 +6,12 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
+FEBNoSpoilWeirdoStrategy class >> strategyName [
+
+	^ 'No spoil weirdo'
+]
+
+{ #category : 'as yet unclassified' }
 FEBNoSpoilWeirdoStrategy >> chooseBatchForNextMealFrom: aCollectionOfCandidates basedOn: aPreferenceDictionary [
 
 	| sortedCandidates rankA rankB |

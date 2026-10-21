@@ -6,6 +6,12 @@ Class {
 }
 
 { #category : 'as yet unclassified' }
+FEBFoodConsumptionStrategy class >> strategyName [
+
+	^ self subclassResponsibility
+]
+
+{ #category : 'as yet unclassified' }
 FEBFoodConsumptionStrategy >> chooseBatchForNextMealFrom: aCollectionOfCandidates basedOn: aPreferenceDictionary [
 
 	self subclassResponsibility

@@ -15,7 +15,6 @@ Class {
 		'remainingTime',
 		'strategy',
 		'shoppingStrategy',
-		'consumptionStrategy',
 		'dailyNeed',
 		'consumptionHistory'
 	],
@@ -24,7 +23,8 @@ Class {
 		'maxHouseholdSize',
 		'availableMoneyPerStep',
 		'availableTimePerStep',
-		'fridgeCapacity'
+		'fridgeCapacity',
+		'consumptionStrategySymbol'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
@@ -52,6 +52,30 @@ FEBHousehold class >> availableTimePerStep [
 FEBHousehold class >> availableTimePerStep: anObject [
 
 	availableTimePerStep := anObject
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> consumptionStrategy [
+
+	| strategyClass |
+	
+	strategyClass := FEBFoodConsumptionStrategy allSubclasses
+		detect: [ :each | each strategyName asSymbol = consumptionStrategySymbol ].
+	
+	^ strategyClass new.
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> consumptionStrategySymbol [
+	<parameter: 'Consumption strategy' values: #(#'No spoil weirdo' #'Some fuck about spoil') default: #'No spoil weirdo'>
+	
+	^ consumptionStrategySymbol
+]
+
+{ #category : 'accessing' }
+FEBHousehold class >> consumptionStrategySymbol: aSymbol [
+
+	consumptionStrategySymbol := aSymbol
 ]
 
 { #category : 'accessing' }
@@ -233,7 +257,7 @@ FEBHousehold >> chooseBatchForNextMeal [
 		
 	candidates ifEmpty: [ ^ nil ].
 	
-	^ consumptionStrategy
+	^ self class consumptionStrategy
 		chooseBatchForNextMealFrom: candidates
 		basedOn: foodPreferenceProportions
 ]
@@ -346,8 +370,6 @@ FEBHousehold >> initialize [
 	self beMoneySaver.
 	
 	shoppingStrategy := FEBSimpleShoppingStrategy new.
-	consumptionStrategy := FEBNoSpoilWeirdoStrategy new.
-	
 	consumptionHistory := OrderedCollection new
 	
 	
