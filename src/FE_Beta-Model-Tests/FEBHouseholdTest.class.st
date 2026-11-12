@@ -43,7 +43,7 @@ FEBHouseholdTest >> setUp [
 	super setUp.
 	
 	model := FEBModel new
-		init.
+		initBigGridScenario.
 		
 	household := model households first.
 ]

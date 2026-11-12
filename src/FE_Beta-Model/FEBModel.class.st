@@ -77,9 +77,32 @@ FEBModel >> households [
 ]
 
 { #category : 'as yet unclassified' }
-FEBModel >> init [
+FEBModel >> initBigGridScenario [
 	<init>
 	| plots |
+	
+	numberOfHouseholds:= 100.
+	numberOfOutlets:= 40.
+	
+	self
+		createGridNumberOfRows: 30
+		numberOfColumns: 30
+		neighbourhood: 8
+		closed: true.
+		
+	plots := self @@ FEBCell.
+	
+	self initializeFoodCategories.
+	self initializeAgents.
+
+FEBHousehold activePovSelector: #povSatietyIndicator 
+]
+
+{ #category : 'as yet unclassified' }
+FEBModel >> initCustomizable [
+	<init>
+	| plots |
+	
 	self
 		createGridNumberOfRows: 30
 		numberOfColumns: 30
@@ -313,7 +336,7 @@ FEBModel >> numberOfFullPeople [
 
 { #category : 'accessing' }
 FEBModel >> numberOfHouseholds [
-	<parameterIntegerMin: 0 max: 1000 default: 100>
+	<parameterIntegerMin: 0 max: 1000 default: 2>
 	^ numberOfHouseholds
 ]
 
@@ -336,7 +359,7 @@ FEBModel >> numberOfHungryPeople [
 
 { #category : 'accessing' }
 FEBModel >> numberOfOutlets [
-	<parameterIntegerMin: 0 max: 1000 default: 40>
+	<parameterIntegerMin: 0 max: 1000 default: 1>
 	^ numberOfOutlets
 ]
 
