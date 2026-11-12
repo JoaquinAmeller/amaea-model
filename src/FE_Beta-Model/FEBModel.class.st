@@ -104,9 +104,9 @@ FEBModel >> initUnconstraintedScenario [
 	numberOfOutlets := 20.
 
 	"Entity class parameters"
-	FEBHousehold availableMoneyPerStep: 500.
+	FEBHousehold availableMoneyPerStep: 2000.
 	FEBHousehold availableTimePerStep: 24.
-	FEBHousehold fridgeCapacity: 100.
+	FEBHousehold fridgeCapacity: 500.
 	FEBOutlet restockAmount: 300.
 	
 	self
@@ -147,22 +147,22 @@ FEBModel >> initializeFoodCategories [
 			shelfLifeInFridge: 5;
 			shelfLifeOutsideFridge: 2;
 			kilocaloriesPerPortion: 250;
-			proteinsPerPortion: 30;
+			proteinsPerPortion: 37;
 			yourself.
 			
 		FEBFoodCategory new
 			name: 'Fruits and vegetables';
 			shelfLifeInFridge: 7;
 			shelfLifeOutsideFridge: 3;
-			kilocaloriesPerPortion: 70;
-			proteinsPerPortion: 2;
+			kilocaloriesPerPortion: 65;
+			proteinsPerPortion: 1.5;
 			yourself.
 			
 		FEBFoodCategory new
 			name: 'Staple food';
 			shelfLifeInFridge: 30;
 			shelfLifeOutsideFridge: 30;
-			kilocaloriesPerPortion: 190;
+			kilocaloriesPerPortion: 260;
 			proteinsPerPortion: 4;
 			yourself.
 			
@@ -170,16 +170,16 @@ FEBModel >> initializeFoodCategories [
 			name: 'Dairy';
 			shelfLifeInFridge: 6;
 			shelfLifeOutsideFridge: 2;
-			kilocaloriesPerPortion: 120;
-			proteinsPerPortion: 7;
+			kilocaloriesPerPortion: 145;
+			proteinsPerPortion: 9;
 			yourself.
 			
 		FEBFoodCategory new
 			name: 'Processed food';
 			shelfLifeInFridge: 30;
 			shelfLifeOutsideFridge: 30;
-			kilocaloriesPerPortion: 750;
-			proteinsPerPortion: 9;
+			kilocaloriesPerPortion: 450;
+			proteinsPerPortion: 3;
 			yourself.
 	}
 ]

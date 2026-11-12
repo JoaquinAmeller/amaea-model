@@ -233,7 +233,7 @@ FEBHousehold >> caloricAdequacyColor [
 	consumptionHistory ifEmpty: [ ^ CMColor gray ].
 
 	self isCaloricSeverelyInadequate ifTrue: [ ^ CMColor red darker darker darker].
-	self isCaloricInadequate ifTrue: [ ^ CMColor red ].
+	self isCaloricInadequate ifTrue: [ ^ CMColor orange ].
 	self isCaloricAdequate ifTrue: [ ^ CMColor green ].
 	self isCaloricExcess ifTrue: [ ^ CMColor purple ].
 ]
@@ -571,7 +571,7 @@ FEBHousehold >> proteinAdequacyColor [
 	consumptionHistory ifEmpty: [ ^ CMColor gray ].
 
 	self isProteinSeverelyInadequate ifTrue: [ ^ CMColor red darker darker darker].
-	self isProteinInadequate ifTrue: [ ^ CMColor red ].
+	self isProteinInadequate ifTrue: [ ^ CMColor orange ].
 	self isProteinAdequate ifTrue: [ ^ CMColor green ].
 ]
 
