@@ -232,10 +232,10 @@ FEBHousehold >> caloricAdequacyColor [
 
 	consumptionHistory ifEmpty: [ ^ CMColor gray ].
 
-	self isCaloricSeverelyInadequate ifTrue: [ ^ CMColor red darker darker darker].
-	self isCaloricInadequate ifTrue: [ ^ CMColor orange ].
-	self isCaloricAdequate ifTrue: [ ^ CMColor green ].
-	self isCaloricExcess ifTrue: [ ^ CMColor purple ].
+	self isCaloricSeverelyInadequate ifTrue: [ ^ Color fromHexString: 'B85353' ]. "red"
+	self isCaloricInadequate ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
+	self isCaloricAdequate ifTrue: [ ^ Color fromHexString: '78A882' ]. "green"
+	self isCaloricExcess ifTrue: [ ^ Color fromHexString: '9274B5' ]. "purple"
 ]
 
 { #category : 'testing' }
@@ -578,9 +578,9 @@ FEBHousehold >> proteinAdequacyColor [
 
 	consumptionHistory ifEmpty: [ ^ CMColor gray ].
 
-	self isProteinSeverelyInadequate ifTrue: [ ^ CMColor red darker darker darker].
-	self isProteinInadequate ifTrue: [ ^ CMColor orange ].
-	self isProteinAdequate ifTrue: [ ^ CMColor green ].
+	self isProteinSeverelyInadequate ifTrue: [ ^ Color fromHexString: 'B85353' ]. "red"
+	self isProteinInadequate ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
+	self isProteinAdequate ifTrue: [ ^ Color fromHexString: '78A882' ]. "green"
 ]
 
 { #category : 'testing' }
@@ -629,9 +629,9 @@ FEBHousehold >> satietyIndicatorColor [
 
 	consumptionHistory ifEmpty: [ ^ CMColor gray ].
 
-	self isHungry ifTrue: [ ^ CMColor red ].
-	self isUnsatiated ifTrue: [ ^ CMColor orange ].
-	self isFull ifTrue: [ ^ CMColor green ].
+	self isHungry ifTrue: [ ^ Color fromHexString: 'B85353' ]. "red"
+	self isUnsatiated ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
+	self isFull ifTrue: [ ^ Color fromHexString: '78A882' ]. "green"
 ]
 
 { #category : 'testing' }
