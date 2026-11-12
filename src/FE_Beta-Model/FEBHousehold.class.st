@@ -267,7 +267,7 @@ FEBHousehold >> consumeFood [
 	<action>
 	| eatenCategories chosenBatch |
 	eatenCategories := OrderedCollection new.
-	
+
 	1 to: dailyNeed do: [ :i |
 		chosenBatch := self chooseBatchForNextMeal.
 		

@@ -20,7 +20,7 @@ FEBNoSpoilWeirdoStrategy >> chooseBatchForNextMealFrom: aCollectionOfCandidates 
 		a remainingDays < b remainingDays or: [ 
 			a remainingDays = b remainingDays and: [ 
 				rankA := self preferenceRankingOf: a category basedOn: aPreferenceDictionary.
-				rankB := self preferenceRankingOf: a category basedOn: aPreferenceDictionary.
+				rankB := self preferenceRankingOf: b category basedOn: aPreferenceDictionary.
 				rankA < rankB ] ] ].
 	
 	^ sortedCandidates first

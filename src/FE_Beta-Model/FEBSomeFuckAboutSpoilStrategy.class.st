@@ -18,7 +18,7 @@ FEBSomeFuckAboutSpoilStrategy >> chooseBatchForNextMealFrom: aCollectionOfCandid
 	
 	sortedCandidates := aCollectionOfCandidates sorted: [ :a :b |
 		rankA := self preferenceRankingOf: a category basedOn: aPreferenceDictionary.
-		rankB := self preferenceRankingOf: a category basedOn: aPreferenceDictionary.
+		rankB := self preferenceRankingOf: b category basedOn: aPreferenceDictionary.
 		
 		rankA < rankB or: [ 
 			rankA = rankB and: [ 
