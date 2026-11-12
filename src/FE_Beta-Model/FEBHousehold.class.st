@@ -329,6 +329,14 @@ FEBHousehold >> hasFoodForOneDay [
 	^ inventory totalQuantity >= (1 * dailyNeed)
 ]
 
+{ #category : 'asserting' }
+FEBHousehold >> hasPreferredFoodForOneDay [
+
+	foodPreferenceProportions keysAndValuesDo: [ :category :proportion | 
+		 (inventory quantityInCategory: category) < (proportion * dailyNeed) ifTrue: [ ^ false ] ].
+	^true 
+]
+
 { #category : 'as yet unclassified' }
 FEBHousehold >> hasUrgentFoodOfCategory: aCategory [
 
@@ -355,8 +363,8 @@ FEBHousehold >> initialize [
 	satisfactionMemory := 2.
 	hungerMemory := 0.
 	
-	"3 meals times the number of persons in the household"
-	dailyNeed := 3 * householdSize. 
+	"10 meals times the number of persons in the household"
+	dailyNeed := 10 * householdSize. 
 	
 	"available for getting food"
 	availableMoneyPerStep := self class availableMoneyPerStep.
@@ -641,7 +649,7 @@ FEBHousehold >> shapeOfPovBasedOnStrategy [
 { #category : 'asserting' }
 FEBHousehold >> shouldGoShopping [
 
-	^ self hasFoodForOneDay not
+	^ self hasFoodForOneDay not or: [ self hasPreferredFoodForOneDay not]
 ]
 
 { #category : 'accessing' }
