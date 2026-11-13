@@ -11,17 +11,8 @@ FEBNoSpoilWeirdoStrategy class >> strategyName [
 	^ 'No spoil weirdo'
 ]
 
-{ #category : 'as yet unclassified' }
-FEBNoSpoilWeirdoStrategy >> chooseBatchForNextMealFrom: aCollectionOfCandidates basedOn: aPreferenceDictionary [
+{ #category : 'consuming' }
+FEBNoSpoilWeirdoStrategy >> mealsEatenFirstBy: aHousehold [
 
-	| sortedCandidates rankA rankB |
-	
-	sortedCandidates := aCollectionOfCandidates sorted: [ :a :b |
-		a remainingDays < b remainingDays or: [ 
-			a remainingDays = b remainingDays and: [ 
-				rankA := self preferenceRankingOf: a category basedOn: aPreferenceDictionary.
-				rankB := self preferenceRankingOf: b category basedOn: aPreferenceDictionary.
-				rankA < rankB ] ] ].
-	
-	^ sortedCandidates first
+	^ aHousehold eatFoodInItsLastDay
 ]

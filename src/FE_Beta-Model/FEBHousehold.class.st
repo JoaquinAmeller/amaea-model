@@ -248,37 +248,19 @@ FEBHousehold >> caloricAdequacyScore [
 	^ totalKilocaloriesConsumed / (2000 * self householdSize)
 ]
 
-{ #category : 'as yet unclassified' }
-FEBHousehold >> chooseBatchForNextMeal [
-
-	| candidates |
-	candidates := inventory nonExpiredBatches
-		select: [ :each | each isNotEmpty ].
-		
-	candidates ifEmpty: [ ^ nil ].
-	
-	^ self class consumptionStrategy
-		chooseBatchForNextMealFrom: candidates
-		basedOn: foodPreferenceProportions
-]
-
-{ #category : 'as yet unclassified' }
+{ #category : 'consuming' }
 FEBHousehold >> consumeFood [
-	<action>
-	| eatenCategories chosenBatch |
-	eatenCategories := OrderedCollection new.
 
-	1 to: dailyNeed do: [ :i |
-		chosenBatch := self chooseBatchForNextMeal.
-		
-		chosenBatch ifNotNil: [ 
-			inventory extractOneUnitFromBatch: chosenBatch.
-			eatenCategories add: chosenBatch category ] ].
-	
+	<action>
+	| eatenCategories |
+	eatenCategories := self class consumptionStrategy mealsEatenFirstBy: self.
+	eatenCategories addAll:
+		(self eatMealsByPreference: dailyNeed - eatenCategories size).
+
 	consumptionHistory add: eatenCategories.
-	
+
 	self updateHungerMemoryAfterEating: eatenCategories.
-	
+
 	^ eatenCategories
 ]
 
@@ -286,6 +268,81 @@ FEBHousehold >> consumeFood [
 FEBHousehold >> dailyNeed [
 
 	^ dailyNeed
+]
+
+{ #category : 'consuming' }
+FEBHousehold >> eat: aNumberOfMeals mealsFromBatch: aBatch [
+
+	^ (1 to: aNumberOfMeals) asOrderedCollection collect: [ :each |
+			  inventory extractOneUnitFromBatch: aBatch.
+			  aBatch category ]
+]
+
+{ #category : 'consuming' }
+FEBHousehold >> eat: aNumberOfMeals mealsOf: aCategory [
+	"Eat up to aNumberOfMeals of aCategory, soonest-expiring batches first. Answer the categories of the meals eaten."
+
+	| eatenCategories |
+	eatenCategories := OrderedCollection new.
+	((inventory batchesOfCategory: aCategory) sorted: [ :a :b |
+		 a remainingDays <= b remainingDays ]) do: [ :batch |
+			eatenCategories addAll: (self
+					 eat: (aNumberOfMeals - eatenCategories size min: batch quantity)
+					 mealsFromBatch: batch) ].
+	^ eatenCategories
+]
+
+{ #category : 'consuming' }
+FEBHousehold >> eat: aNumberOfMeals substitutesFor: aCategory [
+	"Eat up to aNumberOfMeals in place of aCategory, following substitutionList from one substitute to the next until enough is eaten or the list ends. Answer the categories of the meals eaten."
+
+	| eatenCategories substitute |
+	eatenCategories := OrderedCollection new.
+	substitute := substitutionList at: aCategory ifAbsent: [ nil ].
+	[ substitute isNotNil and: [ eatenCategories size < aNumberOfMeals ] ]
+		whileTrue: [
+				eatenCategories addAll:
+					(self
+						 eat: aNumberOfMeals - eatenCategories size
+						 mealsOf: substitute).
+				substitute := substitutionList at: substitute ifAbsent: [ nil ] ].
+	^ eatenCategories
+]
+
+{ #category : 'consuming' }
+FEBHousehold >> eatFoodInItsLastDay [
+	"Eat the food that will be expired tomorrow, up to the daily need, preferred categories first. Answer the categories of the meals eaten."
+
+	| eatenCategories |
+	eatenCategories := OrderedCollection new.
+	((inventory nonExpiredBatches select: [ :each |
+		  each willExpireTomorrow ]) sorted: [ :a :b |
+			 (self preferenceRankOf: a category)
+			 <= (self preferenceRankOf: b category) ]) do: [ :batch |
+			eatenCategories addAll: (self
+					 eat: (dailyNeed - eatenCategories size min: batch quantity)
+					 mealsFromBatch: batch) ].
+	^ eatenCategories
+]
+
+{ #category : 'consuming' }
+FEBHousehold >> eatMealsByPreference: aNumberOfMeals [
+	"Eat aNumberOfMeals split by foodPreferenceProportions. Every category eats its own share first. Then the meals a category could not eat go along substitutionList, to whatever food is left. Answer the categories of the meals eaten."
+
+	| eatenCategories missingMeals |
+	eatenCategories := OrderedCollection new.
+	missingMeals := OrderedDictionary new.
+	
+	(self mealsPerCategoryFor: aNumberOfMeals)
+		keysAndValuesDo: [ :category :meals |
+			| ownMeals |
+			ownMeals := self eat: meals mealsOf: category.
+			eatenCategories addAll: ownMeals.
+			missingMeals at: category put: meals - ownMeals size ].
+
+	missingMeals keysAndValuesDo: [ :category :meals |
+		eatenCategories addAll: (self eat: meals substitutesFor: category) ].
+	^ eatenCategories
 ]
 
 { #category : 'adding' }
@@ -504,6 +561,23 @@ FEBHousehold >> maximumDesiredQuantityOf: aFoodCategory [
 		ifFalse: [ 10 "magic number" ]
 ]
 
+{ #category : 'consuming' }
+FEBHousehold >> mealsPerCategoryFor: aNumberOfMeals [
+	"Split aNumberOfMeals into whole meals per category, in the proportions of foodPreferenceProportions. The largest remainder method makes the meals add up to aNumberOfMeals, and a tie goes to the preferred category."
+
+	| exactShares meals leftover |
+	exactShares := foodPreferenceProportions collect: [ :proportion |
+		               proportion asMinimalDecimalFraction * aNumberOfMeals ].
+	meals := exactShares collect: [ :share | share floor ].
+	leftover := aNumberOfMeals - meals sum.
+
+	((exactShares keys sorted: [ :a :b |
+		  (exactShares at: a) fractionPart
+		  >= (exactShares at: b) fractionPart ]) first: leftover) do: [
+		:category | meals at: category put: (meals at: category) + 1 ].
+	^ meals
+]
+
 { #category : 'as yet unclassified' }
 FEBHousehold >> moneyThreshold [
 
@@ -571,6 +645,12 @@ FEBHousehold >> povSatietyIndicator [
 		color: self satietyIndicatorColor 
 		shape: self shapeOfPovBasedOnStrategy
 		size: self sizeOfPovBasedOnHouseholdSize
+]
+
+{ #category : 'consuming' }
+FEBHousehold >> preferenceRankOf: aCategory [
+
+	^ foodPreferenceProportions keys indexOf: aCategory
 ]
 
 { #category : 'accessing' }

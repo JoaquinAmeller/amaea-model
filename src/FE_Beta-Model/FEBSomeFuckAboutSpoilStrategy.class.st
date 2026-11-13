@@ -11,18 +11,8 @@ FEBSomeFuckAboutSpoilStrategy class >> strategyName [
 	^ 'Some fuck about spoil'
 ]
 
-{ #category : 'as yet unclassified' }
-FEBSomeFuckAboutSpoilStrategy >> chooseBatchForNextMealFrom: aCollectionOfCandidates basedOn: aPreferenceDictionary [
+{ #category : 'consuming' }
+FEBSomeFuckAboutSpoilStrategy >> mealsEatenFirstBy: aHousehold [
 
-	| sortedCandidates rankA rankB |
-	
-	sortedCandidates := aCollectionOfCandidates sorted: [ :a :b |
-		rankA := self preferenceRankingOf: a category basedOn: aPreferenceDictionary.
-		rankB := self preferenceRankingOf: b category basedOn: aPreferenceDictionary.
-		
-		rankA < rankB or: [ 
-			rankA = rankB and: [ 
-				a remainingDays < b remainingDays ] ] ].
-	
-	^ sortedCandidates first
+	^ OrderedCollection new
 ]

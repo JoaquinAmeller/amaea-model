@@ -11,16 +11,9 @@ FEBFoodConsumptionStrategy class >> strategyName [
 	^ self subclassResponsibility
 ]
 
-{ #category : 'as yet unclassified' }
-FEBFoodConsumptionStrategy >> chooseBatchForNextMealFrom: aCollectionOfCandidates basedOn: aPreferenceDictionary [
+{ #category : 'consuming' }
+FEBFoodConsumptionStrategy >> mealsEatenFirstBy: aHousehold [
+	"Make aHousehold eat the meals that come before its daily need is split by its preferences. Answer the categories of those meals, in an OrderedCollection."
 
-	self subclassResponsibility
-]
-
-{ #category : 'as yet unclassified' }
-FEBFoodConsumptionStrategy >> preferenceRankingOf: aCategory basedOn: aPreferenceDictionary [
-
-	^ aPreferenceDictionary orderedKeys 
-		indexOf: aCategory
-		ifAbsent: [ self error: 'All categories must appear in the preference list' ]
+	^ self subclassResponsibility
 ]
