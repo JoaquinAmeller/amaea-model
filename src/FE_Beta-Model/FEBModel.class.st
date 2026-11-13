@@ -104,17 +104,20 @@ FEBModel >> initCustomizable [
 	| plots |
 	
 	self
-		createGridNumberOfRows: 30
-		numberOfColumns: 30
+		createGridNumberOfRows: 6
+		numberOfColumns: 6
 		neighbourhood: 8
 		closed: true.
 		
 	plots := self @@ FEBCell.
 	
+	FEBOutlet restockAmount: 3000.
+	
 	self initializeFoodCategories.
 	self initializeAgents.
 
-FEBHousehold activePovSelector: #povSatietyIndicator 
+FEBHousehold activePovSelector: #povSatietyIndicator.
+FEBOutlet activePovSelector: #povImage
 ]
 
 { #category : 'as yet unclassified' }
