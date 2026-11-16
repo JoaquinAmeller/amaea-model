@@ -42,6 +42,24 @@ Class {
 }
 
 { #category : 'helpers' }
+FEBShoppingTripTest >> foodBoughtToStockUpBy: aStrategySelector [
+	"Answer how much food a household with today's food, 100 to spend and an outlet next door buys with that strategy"
+
+	household perform: aStrategySelector.
+	household outlets removeAll.
+	household inventory batches removeAll.
+	self giveMoney: 100.
+	self give: 10 of: stapleFood.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 1000
+		of: stapleFood.
+	household goShopping.
+	^ household inventory totalQuantity - 10
+]
+
+{ #category : 'helpers' }
 FEBShoppingTripTest >> give: aQuantity of: aCategory [
 
 	household inventory addBatch:
@@ -84,6 +102,26 @@ FEBShoppingTripTest >> livePreferringStaplesFruitsAndProteinsFor: aNumberOfDays 
 							 fridge: each shouldBeStoredInFridge) ].
 			household step ].
 	^ household instVarNamed: #consumptionHistory
+]
+
+{ #category : 'helpers' }
+FEBShoppingTripTest >> neighbourAt: aRow at: aColumn [
+	"Another person like the household, with no food, knowing the same outlets"
+
+	| neighbour |
+	neighbour := model
+		             newEntity: FEBHousehold
+		             locatedAt: (model cellAt: aRow at: aColumn).
+	neighbour instVarNamed: #householdSize put: 1.
+	neighbour instVarNamed: #dailyNeed put: 10.
+	neighbour instVarNamed: #availableMoneyPerStep put: 1000.
+	neighbour foodPreferenceProportions:
+		{ (stapleFood -> 1.0) } asDictionary.
+	neighbour substitutionList:
+		(household instVarNamed: #substitutionList).
+	neighbour inventory batches removeAll.
+	neighbour outlets: household outlets.
+	^ neighbour
 ]
 
 { #category : 'helpers' }
@@ -131,55 +169,57 @@ FEBShoppingTripTest >> setUp [
 ]
 
 { #category : 'tests' }
-FEBShoppingTripTest >> testAMoneySaverSpendsLessMoneyOnStorageThanATimeSaver [
+FEBShoppingTripTest >> testADesperateSaverSpendsLessMoneyOnStorageThanARichBastard [
 
-	| timeSaverFood moneySaverFood |
-	self giveMoney: 100.
+	self assert: (self foodBoughtToStockUpBy: #beDesperateSaver)
+		< (self foodBoughtToStockUpBy: #beRichBastard)
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testADesperateSaverSpendsLessTimeStockingUpThanARichBastard [
+	"With the 2 hours a household has, an outlet 60 minutes away is within reach of a household keeping back little of its time, and out of reach of one keeping back a lot"
+
+	self assert: (self walksAnHourToStockUpWith: #beRichBastard).
+	self deny: (self walksAnHourToStockUpWith: #beDesperateSaver)
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testAHouseholdGoesElsewhereWhenANeighbourEmptiedTheClosestOutlet [
+
+	| neighbour |
+	self giveMoney: 1000.
 	self
 		outletAt: 1
 		at: 3
-		stocking: 1000
+		stocking: 60
 		of: stapleFood.
+	self
+		outletAt: 1
+		at: 6
+		stocking: 100
+		of: stapleFood.
+	neighbour := self neighbourAt: 2 at: 1.
 
-	household beTimeSaver.
-	self give: 10 of: stapleFood.
 	household goShopping.
-	timeSaverFood := household inventory totalQuantity.
+	neighbour goShopping.
 
-	household inventory batches removeAll.
-	household beMoneySaver.
-	self give: 10 of: stapleFood.
-	household goShopping.
-	moneySaverFood := household inventory totalQuantity.
+	self assert: household inventory totalQuantity equals: 60.
+	self assert: neighbour inventory totalQuantity equals: 60
+]
 
-	self assert: moneySaverFood < timeSaverFood
+{ #category : 'tests' }
+FEBShoppingTripTest >> testAMoneySaverSpendsLessMoneyOnStorageThanATimeSaver [
+
+	self assert: (self foodBoughtToStockUpBy: #beMoneySaver)
+		< (self foodBoughtToStockUpBy: #beTimeSaver)
 ]
 
 { #category : 'tests' }
 FEBShoppingTripTest >> testATimeSaverSpendsLessTimeStockingUpThanAMoneySaver [
-	"The outlet is 60 minutes away and the household already has today's food"
+	"With the 2 hours a household has, an outlet 60 minutes away is within reach of a household keeping back little of its time, and out of reach of one keeping back a lot"
 
-	| outlet |
-	self giveMoney: 1000.
-	outlet := self
-		          outletAt: 1
-		          at: 13
-		          stocking: 100
-		          of: stapleFood.
-
-	household beMoneySaver.
-	self give: 10 of: stapleFood.
-	household goShopping.
-	self assert: (self inventoryOf: outlet) totalQuantity < 100.
-
-	(self inventoryOf: outlet) batches removeAll.
-	(self inventoryOf: outlet) addBatch:
-		(FEBFoodBatch category: stapleFood quantity: 100 fridge: false).
-	household inventory batches removeAll.
-	household beTimeSaver.
-	self give: 10 of: stapleFood.
-	household goShopping.
-	self assert: (self inventoryOf: outlet) totalQuantity equals: 100
+	self assert: (self walksAnHourToStockUpWith: #beMoneySaver).
+	self deny: (self walksAnHourToStockUpWith: #beTimeSaver)
 ]
 
 { #category : 'tests' }
@@ -228,6 +268,26 @@ FEBShoppingTripTest >> testDoesNotGoFurtherThanItsTimeAllows [
 	household goShopping.
 
 	self assert: household inventory totalQuantity equals: 0
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testFoodBoughtByOneHouseholdIsGoneForTheNext [
+
+	| neighbour outlet |
+	self giveMoney: 1000.
+	outlet := self
+		          outletAt: 1
+		          at: 3
+		          stocking: 15
+		          of: stapleFood.
+	neighbour := self neighbourAt: 3 at: 1.
+
+	household goShopping.
+	neighbour goShopping.
+
+	self assert: household inventory totalQuantity equals: 15.
+	self assert: neighbour inventory totalQuantity equals: 0.
+	self assert: (self inventoryOf: outlet) totalQuantity equals: 0
 ]
 
 { #category : 'tests' }
@@ -528,4 +588,23 @@ FEBShoppingTripTest >> testWalksFurtherForFoodForTodayThanForStorage [
 	household inventory batches removeAll.
 	household goShopping.
 	self assert: (self inventoryOf: outlet) totalQuantity < 100
+]
+
+{ #category : 'helpers' }
+FEBShoppingTripTest >> walksAnHourToStockUpWith: aStrategySelector [
+	"Answer whether a household with today's food goes to an outlet 60 minutes away with that strategy"
+
+	| outlet |
+	household perform: aStrategySelector.
+	household outlets removeAll.
+	household inventory batches removeAll.
+	self giveMoney: 1000.
+	self give: 10 of: stapleFood.
+	outlet := self
+		          outletAt: 1
+		          at: 13
+		          stocking: 100
+		          of: stapleFood.
+	household goShopping.
+	^ (self inventoryOf: outlet) totalQuantity < 100
 ]

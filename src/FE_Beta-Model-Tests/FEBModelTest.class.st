@@ -123,6 +123,43 @@ FEBModelTest >> testEveryoneHasExactlyOneCaloricAndOneProteinLevel [
 ]
 
 { #category : 'tests' }
+FEBModelTest >> testFoodSoldByOutletsIsTheFoodBoughtByHouseholds [
+	"Over one step: what outlets lose, other than spoiled food and counting their restock, households gain, other than what they eat and what spoils"
+
+	| model outletInventories stockOf trashOf householdStock outletStock outletTrash soldByOutlets boughtByHouseholds eaten |
+	model := self bigGridModel.
+	model step.
+	outletInventories := model outlets collect: [ :each |
+		                     each instVarNamed: #inventory ].
+	stockOf := [ :inventories |
+	           inventories sum: [ :each | each totalQuantity ] ].
+	trashOf := [ :inventories |
+	           inventories sum: [ :each | each amountOfFoodInTrashbin ] ].
+	householdStock := stockOf value:
+		                  (model households collect: [ :each |
+			                   each inventory ]).
+	outletStock := stockOf value: outletInventories.
+	outletTrash := trashOf value: outletInventories.
+
+	model step.
+
+	eaten := model households sum: [ :each |
+		         (each instVarNamed: #consumptionHistory) last size ].
+	soldByOutlets := outletStock + model supply
+	                 - ((trashOf value: outletInventories) - outletTrash)
+	                 - (stockOf value: outletInventories).
+	boughtByHouseholds := (stockOf value:
+		                       (model households collect: [ :each |
+			                        each inventory ])) - householdStock + eaten
+	                      +
+	                      (trashOf value:
+		                       (model households collect: [ :each |
+			                        each inventory ])).
+	self assert: soldByOutlets > 0.
+	self assert: soldByOutlets equals: boughtByHouseholds
+]
+
+{ #category : 'tests' }
 FEBModelTest >> testHalfOfTheHouseholdsSaveMoneyAndHalfSaveTime [
 
 	| households |
