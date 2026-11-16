@@ -128,6 +128,7 @@ FEBOutlet >> restock [
 				         quantity: self restockAmount / 10
 				         fridge: category shouldBeStoredInFridge.
 
+			self today addRestock: batch.
 			inventory addBatch: batch ]
 ]
 
@@ -164,8 +165,10 @@ FEBOutlet >> sellCategory: aCategory quantityUpTo: aFoodQuantity withMoneyUpTo: 
 { #category : 'control' }
 FEBOutlet >> step [
 
+	inventory emptyTheTrashbin.
 	self restock.
-	inventory becomeOneDayOlder
+	inventory becomeOneDayOlder.
+	self today recordEndOfDayOf: inventory
 ]
 
 { #category : 'as yet unclassified' }

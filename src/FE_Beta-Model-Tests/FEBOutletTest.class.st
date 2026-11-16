@@ -85,6 +85,44 @@ FEBOutletTest >> stock: aQuantity of: aCategory expiringIn: aNumberOfDays [
 ]
 
 { #category : 'tests' }
+FEBOutletTest >> testADayRecordsTheOutletsStockAtTheEndOfTheDay [
+
+	model simulationContext currentTimeStep: 1.
+	outlet step.
+
+	self
+		assert: (model foodCategories sum: [ :each |
+				 (outlet today stockOf: each) total ])
+		equals: outlet inventorySize
+]
+
+{ #category : 'tests' }
+FEBOutletTest >> testADayRecordsWhatTheOutletRestocked [
+
+	model simulationContext currentTimeStep: 1.
+	outlet step.
+
+	self assert: outlet today restock size equals: outlet restockAmount
+]
+
+{ #category : 'tests' }
+FEBOutletTest >> testAnOutletThrowsAwayItsSpoiledFoodEachDay [
+	"Restocked food keeps at least 2 days, so nothing spoils on the second day"
+
+	self stock: 10 of: dairy expiringIn: 1.
+	model simulationContext currentTimeStep: 1.
+	outlet step.
+	model simulationContext currentTimeStep: 2.
+	outlet step.
+
+	self
+		assert: ((outlet history dayAt: 1) spoiledFood occurrencesOf: dairy)
+		equals: 10.
+	self assert: (outlet history dayAt: 2) spoiledFood isEmpty.
+	self assert: self outletInventory amountOfFoodInTrashbin equals: 0
+]
+
+{ #category : 'tests' }
 FEBOutletTest >> testDoesNotSellFoodInItsLastDay [
 	"Households buy for the next day, and food in its last day will be spoiled by then"
 

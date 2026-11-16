@@ -147,3 +147,37 @@ FEBFoodInventoryTest >> testSpoiledFoodGoesToTheTrashbin [
 	self assert: inventory totalQuantity equals: 4.
 	self assert: inventory amountOfFoodInTrashbin equals: 3
 ]
+
+{ #category : 'tests' }
+FEBFoodInventoryTest >> testSpoiledFoodIsCountedPerCategory [
+
+	self add: 3 of: dairy expiringIn: 1.
+	self add: 2 of: dairy expiringIn: 1.
+	self add: 5 of: rice expiringIn: 2.
+
+	inventory becomeOneDayOlder.
+
+	self assert: (inventory spoiledFood occurrencesOf: dairy) equals: 5.
+	self assert: (inventory spoiledFood occurrencesOf: rice) equals: 0
+]
+
+{ #category : 'tests' }
+FEBFoodInventoryTest >> testStockLevelsTellWhatIsInTheFridgeOutsideAndInItsLastDay [
+
+	| dairyLevel riceLevel |
+	inventory fridgeCapacity: 10.
+	inventory addBatch:
+		(FEBFoodBatch category: dairy quantity: 4 fridge: true).
+	self add: 3 of: dairy expiringIn: 1.
+	self add: 5 of: rice expiringIn: 2.
+
+	dairyLevel := inventory stockLevels detect: [ :each |
+		              each category = dairy ].
+	riceLevel := inventory stockLevels detect: [ :each |
+		             each category = rice ].
+	self assert: dairyLevel inFridge equals: 4.
+	self assert: dairyLevel outsideFridge equals: 3.
+	self assert: dairyLevel inLastDay equals: 3.
+	self assert: riceLevel outsideFridge equals: 5.
+	self assert: riceLevel inLastDay equals: 0
+]

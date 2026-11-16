@@ -32,21 +32,19 @@ day sales isEmpty ""true""
 "
 Class {
 	#name : 'FEBOutletDay',
-	#superclass : 'Object',
+	#superclass : 'FEBDay',
 	#instVars : [
-		'step',
-		'sales'
+		'sales',
+		'restock'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
 }
 
-{ #category : 'instance creation' }
-FEBOutletDay class >> step: anInteger [
+{ #category : 'recording' }
+FEBOutletDay >> addRestock: aBatch [
 
-	^ self new
-		  initializeStep: anInteger;
-		  yourself
+	restock add: aBatch category withOccurrences: aBatch quantity
 ]
 
 { #category : 'recording' }
@@ -58,25 +56,19 @@ FEBOutletDay >> addSale: aPurchase [
 { #category : 'initialization' }
 FEBOutletDay >> initializeStep: anInteger [
 
-	step := anInteger.
-	sales := OrderedCollection new
+	super initializeStep: anInteger.
+	sales := OrderedCollection new.
+	restock := Bag new
 ]
 
-{ #category : 'printing' }
-FEBOutletDay >> printOn: aStream [
+{ #category : 'accessing' }
+FEBOutletDay >> restock [
 
-	super printOn: aStream.
-	aStream << ' (step ' << step printString << ')'
+	^ restock
 ]
 
 { #category : 'accessing' }
 FEBOutletDay >> sales [
 
 	^ sales
-]
-
-{ #category : 'accessing' }
-FEBOutletDay >> step [
-
-	^ step
 ]

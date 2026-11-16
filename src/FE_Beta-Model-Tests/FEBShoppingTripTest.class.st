@@ -171,6 +171,29 @@ FEBShoppingTripTest >> setUp [
 ]
 
 { #category : 'tests' }
+FEBShoppingTripTest >> testADayRecordsTheFoodThatSpoiledThatNight [
+	"15 meals of processed food in their last day: whatever the household does not eat spoils tonight"
+
+	| day |
+	self give: 20 of: stapleFood.
+	household inventory addBatch: (FEBFoodBatch
+			 category: processedFood
+			 quantity: 15
+			 fridge: false
+			 remainingDays: 1).
+
+	household step.
+
+	day := household today.
+	self assert: (day spoiledFood occurrencesOf: processedFood) > 0.
+	self
+		assert: (day spoiledFood occurrencesOf: processedFood)
+			+ (day meals count: [ :each | each category = processedFood ])
+		equals: 15.
+	self assert: (day stockOf: processedFood) total equals: 0
+]
+
+{ #category : 'tests' }
 FEBShoppingTripTest >> testADayRecordsTheMoneyAndTimeOfItsShopping [
 	"The outlet is 2 cells away, 10 minutes of walking"
 
@@ -191,6 +214,23 @@ FEBShoppingTripTest >> testADayRecordsTheMoneyAndTimeOfItsShopping [
 	self assert: day moneySpent > 0.
 	self assert: day timeAvailable equals: 2 hours.
 	self assert: day timeSpent equals: 10 minutes
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testADayRecordsTheStockLeftAtTheEndOfTheDay [
+	"20 meals: 10 eaten, 10 left for tomorrow, so no shopping"
+
+	| level |
+	self give: 20 of: stapleFood.
+
+	household step.
+
+	level := household today stockOf: stapleFood.
+	self assert: level outsideFridge equals: 10.
+	self assert: level inFridge equals: 0.
+	self
+		assert: (household today stockOf: animalProteins) total
+		equals: 0
 ]
 
 { #category : 'tests' }

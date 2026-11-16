@@ -851,12 +851,11 @@ FEBHousehold >> step [
 
 	"Households eat in the morning and then they consider buying food for the next day"
 	self consumeFood.
-	
-	self shouldGoShopping ifTrue: [ 
-		self goShopping ].
-	
-	inventory becomeOneDayOlder.
 
+	self shouldGoShopping ifTrue: [ self goShopping ].
+
+	inventory becomeOneDayOlder.
+	self today recordEndOfDayOf: inventory
 ]
 
 { #category : 'buying' }

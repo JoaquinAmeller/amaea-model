@@ -36,9 +36,8 @@ day wentShopping ""false""
 "
 Class {
 	#name : 'FEBHouseholdDay',
-	#superclass : 'Object',
+	#superclass : 'FEBDay',
 	#instVars : [
-		'step',
 		'meals',
 		'purchases',
 		'moneyAvailable',
@@ -48,14 +47,6 @@ Class {
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
 }
-
-{ #category : 'instance creation' }
-FEBHouseholdDay class >> step: anInteger [
-
-	^ self new
-		  initializeStep: anInteger;
-		  yourself
-]
 
 { #category : 'recording' }
 FEBHouseholdDay >> addMeals: aCollectionOfMeals [
@@ -72,7 +63,7 @@ FEBHouseholdDay >> addPurchase: aPurchase [
 { #category : 'initialization' }
 FEBHouseholdDay >> initializeStep: anInteger [
 
-	step := anInteger.
+	super initializeStep: anInteger.
 	"A Bag counts equal meals once each, so a day keeps at most one entry per category and reason, however many meals were eaten"
 	meals := Bag new.
 	purchases := OrderedCollection new.
@@ -97,13 +88,6 @@ FEBHouseholdDay >> moneySpent [
 	^ purchases sum: [ :each | each price ] ifEmpty: [ 0 ]
 ]
 
-{ #category : 'printing' }
-FEBHouseholdDay >> printOn: aStream [
-
-	super printOn: aStream.
-	aStream << ' (step ' << step printString << ')'
-]
-
 { #category : 'accessing' }
 FEBHouseholdDay >> purchases [
 
@@ -117,12 +101,6 @@ FEBHouseholdDay >> recordShoppingWithMoney: aMoneyAmount time: aDuration timeSpe
 	moneyAvailable := aMoneyAmount.
 	timeAvailable := aDuration.
 	timeSpent := anotherDuration
-]
-
-{ #category : 'accessing' }
-FEBHouseholdDay >> step [
-
-	^ step
 ]
 
 { #category : 'accessing' }

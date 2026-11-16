@@ -94,6 +94,67 @@ FEBModelTest >> testASimulationKeepsFoodAndMoneyValid [
 ]
 
 { #category : 'tests' }
+FEBModelTest >> testEachHouseholdsDaysAddUp [
+	"Each night, a household holds what it held the night before, plus what it bought, less what it ate and what spoiled"
+
+	| simulation households totalOf |
+	simulation := (CMSimulation for: FEBModel new)
+		              activeInitSelector: #initBigGridScenario;
+		              activeControlSelector: #step;
+		              randomSeed: 3;
+		              hasFixedRandomSeed: true;
+		              initializeSimulation;
+		              yourself.
+	5 timesRepeat: [ simulation runStep ].
+	households := simulation cormasModel households.
+	totalOf := [ :day |
+	           day stock sum: [ :each | each total ] ifEmpty: [ 0 ] ].
+
+	self denyEmpty: households.
+	households do: [ :household |
+			2 to: 5 do: [ :step |
+					| yesterday today |
+					yesterday := household history dayAt: step - 1.
+					today := household history dayAt: step.
+					self
+						assert: (totalOf value: today)
+						equals: (totalOf value: yesterday)
+							+
+							(today purchases sum: [ :each | each quantity ] ifEmpty: [ 0 ])
+							- today meals size - today spoiledFood size ] ]
+]
+
+{ #category : 'tests' }
+FEBModelTest >> testEachOutletsDaysAddUp [
+	"Each night, an outlet holds what it held the night before, plus what it restocked, less what it sold and what spoiled"
+
+	| simulation outlets totalOf |
+	simulation := (CMSimulation for: FEBModel new)
+		              activeInitSelector: #initBigGridScenario;
+		              activeControlSelector: #step;
+		              randomSeed: 3;
+		              hasFixedRandomSeed: true;
+		              initializeSimulation;
+		              yourself.
+	5 timesRepeat: [ simulation runStep ].
+	outlets := simulation cormasModel outlets.
+	totalOf := [ :day |
+	           day stock sum: [ :each | each total ] ifEmpty: [ 0 ] ].
+
+	self denyEmpty: outlets.
+	outlets do: [ :outlet |
+			2 to: 5 do: [ :step |
+					| yesterday today |
+					yesterday := outlet history dayAt: step - 1.
+					today := outlet history dayAt: step.
+					self
+						assert: (totalOf value: today)
+						equals: (totalOf value: yesterday) + today restock size
+							- (today sales sum: [ :each | each quantity ] ifEmpty: [ 0 ])
+							- today spoiledFood size ] ]
+]
+
+{ #category : 'tests' }
 FEBModelTest >> testEveryFridgeFoodHasASubstituteThatKeepsOutsideTheFridge [
 
 	| model household fridgeFood |
@@ -157,22 +218,21 @@ FEBModelTest >> testEveryoneHasExactlyOneCaloricAndOneProteinLevel [
 
 { #category : 'tests' }
 FEBModelTest >> testFoodSoldByOutletsIsTheFoodBoughtByHouseholds [
-	"Over one step: what outlets lose, other than spoiled food and counting their restock, households gain, other than what they eat and what spoils"
+	"Over one step: what outlets lose, other than spoiled food and counting their restock, households gain, other than what they eat and what spoils. Outlets and households empty their trashbin every morning, so after the step it holds that night's spoiled food."
 
-	| model outletInventories stockOf trashOf householdStock outletStock outletTrash soldByOutlets boughtByHouseholds eaten |
+	| model outletInventories householdInventories stockOf trashOf householdStock outletStock soldByOutlets boughtByHouseholds eaten |
 	model := self bigGridModel.
 	model step.
 	outletInventories := model outlets collect: [ :each |
 		                     each instVarNamed: #inventory ].
+	householdInventories := model households collect: [ :each |
+		                        each inventory ].
 	stockOf := [ :inventories |
 	           inventories sum: [ :each | each totalQuantity ] ].
 	trashOf := [ :inventories |
 	           inventories sum: [ :each | each amountOfFoodInTrashbin ] ].
-	householdStock := stockOf value:
-		                  (model households collect: [ :each |
-			                   each inventory ]).
+	householdStock := stockOf value: householdInventories.
 	outletStock := stockOf value: outletInventories.
-	outletTrash := trashOf value: outletInventories.
 
 	model simulationContext currentTimeStep: 1.
 	model step.
@@ -180,15 +240,11 @@ FEBModelTest >> testFoodSoldByOutletsIsTheFoodBoughtByHouseholds [
 	eaten := model households sum: [ :each |
 		         (each history dayAt: 1) meals size ].
 	soldByOutlets := outletStock + model supply
-	                 - ((trashOf value: outletInventories) - outletTrash)
+	                 - (trashOf value: outletInventories)
 	                 - (stockOf value: outletInventories).
-	boughtByHouseholds := (stockOf value:
-		                       (model households collect: [ :each |
-			                        each inventory ])) - householdStock + eaten
-	                      +
-	                      (trashOf value:
-		                       (model households collect: [ :each |
-			                        each inventory ])).
+	boughtByHouseholds := (stockOf value: householdInventories)
+	                      - householdStock + eaten
+	                      + (trashOf value: householdInventories).
 	self assert: soldByOutlets > 0.
 	self assert: soldByOutlets equals: boughtByHouseholds
 ]

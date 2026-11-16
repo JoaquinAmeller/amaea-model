@@ -4,8 +4,7 @@ Class {
 	#instVars : [
 		'batches',
 		'fridgeCapacity',
-		'trashbin',
-		'inventoryHistory'
+		'trashbin'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
@@ -58,7 +57,6 @@ FEBFoodInventory >> batchesOfCategory: aCategory [
 { #category : 'as yet unclassified' }
 FEBFoodInventory >> becomeOneDayOlder [
 
-	self recordInventoryHistory.
 	batches do: [ :each | each becomeOneDayOlder ].
 	self removeExpiredBatched
 ]
@@ -121,10 +119,10 @@ FEBFoodInventory >> hasFoodInCategory: aCategory [
 
 { #category : 'initialization' }
 FEBFoodInventory >> initialize [
+
 	super initialize.
 	batches := OrderedCollection new.
 	trashbin := OrderedCollection new.
-	inventoryHistory := OrderedCollection new.
 	fridgeCapacity := 0
 ]
 
@@ -173,20 +171,6 @@ FEBFoodInventory >> quantityLeftTomorrowInCategory: aCategory [
 		  ifEmpty: [ 0 ]
 ]
 
-{ #category : 'as yet unclassified' }
-FEBFoodInventory >> recordInventoryHistory [
-
-	| record |
-	record := Dictionary new.
-	
-	batches do: [ :batch |
-		(record at: batch category
-			update: [ :v | v + batch quantity ]
-			initial: [ batch quantity ]) ].
-	
-	inventoryHistory add: record
-]
-
 { #category : 'removing' }
 FEBFoodInventory >> removeBatch: aBatch [
 
@@ -216,6 +200,45 @@ FEBFoodInventory >> removeExpiredBatched [
 		batches remove: each.
 		trashbin add: each ]
 
+]
+
+{ #category : 'accessing' }
+FEBFoodInventory >> spoiledFood [
+	"Answer the food in the trashbin, as a Bag counting the meals of each category"
+
+	| spoiledFood |
+	spoiledFood := Bag new.
+	trashbin do: [ :each |
+		spoiledFood add: each category withOccurrences: each quantity ].
+	^ spoiledFood
+]
+
+{ #category : 'accessing' }
+FEBFoodInventory >> stockLevels [
+	"Answer a FEBStockLevel for each category of food held, in the order the categories first appear"
+
+	| categories |
+	categories := (self nonExpiredBatches collect: [ :each |
+			               each category ]) asOrderedCollection
+		              removeDuplicates;
+		              yourself.
+	^ categories collect: [ :category |
+			  | categoryBatches |
+			  categoryBatches := self batchesOfCategory: category.
+			  FEBStockLevel
+				  category: category
+				  inFridge:
+					  ((categoryBatches select: [ :each | each isInFridge ])
+						   sum: [ :each | each quantity ]
+						   ifEmpty: [ 0 ])
+				  outsideFridge:
+					  ((categoryBatches reject: [ :each | each isInFridge ])
+						   sum: [ :each | each quantity ]
+						   ifEmpty: [ 0 ])
+				  inLastDay:
+					  ((categoryBatches select: [ :each | each willExpireTomorrow ])
+						   sum: [ :each | each quantity ]
+						   ifEmpty: [ 0 ]) ]
 ]
 
 { #category : 'accessing' }
