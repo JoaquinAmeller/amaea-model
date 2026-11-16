@@ -454,12 +454,6 @@ FEBHousehold >> hasPreferredFoodForOneDay [
 	^true 
 ]
 
-{ #category : 'as yet unclassified' }
-FEBHousehold >> hasUrgentFoodOfCategory: aCategory [
-
-	^ inventory hasBatchExpiringSoonOfCategory: aCategory
-]
-
 { #category : 'accessing' }
 FEBHousehold >> householdSize [
 
