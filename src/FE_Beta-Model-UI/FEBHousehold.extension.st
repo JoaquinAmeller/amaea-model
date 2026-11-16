@@ -6,3 +6,9 @@ FEBHousehold >> inspectionDashboard: aBuilder [
 	<inspectorPresentationOrder: 0 title: 'Dashboard'>
 	^ FEBHouseholdDashboard on: self
 ]
+
+{ #category : '*FE_Beta-Model-UI' }
+FEBHousehold >> inspectionDashboardContext: aContext [
+
+	aContext withoutEvaluator
+]
