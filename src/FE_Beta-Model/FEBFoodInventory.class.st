@@ -127,23 +127,6 @@ FEBFoodInventory >> nonExpiredBatches [
 ]
 
 { #category : 'as yet unclassified' }
-FEBFoodInventory >> oldestBatchOfCategory: aCategory [
-
-	| candidates oldestBatch |	
-	candidates := self batchesOfCategory: aCategory.
-	
-	candidates ifEmpty: [ self error: 'There are no batches in this category' ].
-	
-	oldestBatch := candidates first.
-	
-	batches do: [ :each |
-		each remainingDays < oldestBatch remainingDays ifTrue: [ 
-			oldestBatch := each ] ].
-	
-	^ oldestBatch 
-]
-
-{ #category : 'as yet unclassified' }
 FEBFoodInventory >> quantitiesByCategory [
 
 	| dict |

@@ -135,15 +135,3 @@ FEBFoodInventoryTest >> testSpoiledFoodGoesToTheTrashbin [
 	self assert: inventory totalQuantity equals: 4.
 	self assert: inventory amountOfFoodInTrashbin equals: 3
 ]
-
-{ #category : 'tests' }
-FEBFoodInventoryTest >> testTheOldestBatchOfACategoryIsTheOneExpiringFirst [
-
-	self add: 3 of: dairy expiringIn: 4.
-	self add: 4 of: rice expiringIn: 1.
-	self add: 5 of: dairy expiringIn: 2.
-
-	self
-		assert: (inventory oldestBatchOfCategory: dairy) quantity
-		equals: 5
-]
