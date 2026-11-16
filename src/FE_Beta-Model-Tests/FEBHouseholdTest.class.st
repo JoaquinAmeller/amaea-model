@@ -6,7 +6,8 @@ Class {
 		'animalProteins',
 		'fruitsAndVegetables',
 		'stapleFood',
-		'processedFood'
+		'processedFood',
+		'dairy'
 	],
 	#category : 'FE_Beta-Model-Tests',
 	#package : 'FE_Beta-Model-Tests'
@@ -53,6 +54,7 @@ FEBHouseholdTest >> setUp [
 		                       'Fruits and vegetables'.
 	stapleFood := model foodCategoryNamed: 'Staple food'.
 	processedFood := model foodCategoryNamed: 'Processed food'.
+	dairy := model foodCategoryNamed: 'Dairy'.
 
 	household := model newEntity: FEBHousehold.
 	household instVarNamed: #householdSize put: 1.
@@ -189,6 +191,24 @@ FEBHouseholdTest >> testFoodSpoilingTonightIsNotCountedForTomorrow [
 	self
 		assert: (shoppingList storageNeedOf: fruitsAndVegetables)
 		equals: 15
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testFridgeFoodThatDoesNotFitIsReplacedLeastPreferredFirst [
+	"Storage for 5 days is 15 animal proteins and 10 dairy, but the fridge holds 6. The 19 meals that do not fit are taken from dairy, the least preferred, before animal proteins, and replaced by staple food."
+
+	| shoppingList |
+	household foodPreferenceProportions: {
+			(stapleFood -> 0.5).
+			(animalProteins -> 0.3).
+			(dairy -> 0.2) } asDictionary.
+	self emptyTheInventory.
+
+	shoppingList := household buildShoppingList.
+
+	self assert: (shoppingList storageNeedOf: animalProteins) equals: 6.
+	self assert: (shoppingList storageNeedOf: dairy) equals: 0.
+	self assert: (shoppingList storageNeedOf: stapleFood) equals: 25 + 19
 ]
 
 { #category : 'tests' }

@@ -34,6 +34,39 @@ FEBModelTest >> dummyModel [
 	^ model
 ]
 
+{ #category : 'helpers' }
+FEBModelTest >> mealsEatenInFiveStepsWithSeed: aNumber [
+	"Answer, for each household in turn, the food it ate each day of a big grid simulation run for 5 steps from that random seed"
+
+	| simulation |
+	simulation := (CMSimulation for: FEBModel new)
+		              activeInitSelector: #initBigGridScenario;
+		              activeControlSelector: #step;
+		              randomSeed: aNumber;
+		              hasFixedRandomSeed: true;
+		              initializeSimulation;
+		              yourself.
+	5 timesRepeat: [ simulation runStep ].
+	^ simulation cormasModel households asArray collect: [ :each |
+			  (each instVarNamed: #consumptionHistory) asArray collect: [
+				  :meals | (meals collect: [ :category | category name ]) asArray ] ]
+]
+
+{ #category : 'tests' }
+FEBModelTest >> testAModelWithoutHouseholdsCanBeObserved [
+	"The number of households is a parameter that can be 0"
+
+	| model |
+	model := FEBModel new.
+
+	self
+		shouldnt: [
+				model averageSatietyScore.
+				model averageCaloricAdequacyScore.
+				model averageProteinAdequacyScore ]
+		raise: Error
+]
+
 { #category : 'tests' }
 FEBModelTest >> testAModelWithoutHouseholdsCanGiveOutStrategies [
 
@@ -193,6 +226,20 @@ FEBModelTest >> testHouseholdsNeedTenMealsPerPersonADay [
 	self denyEmpty: households.
 	households do: [ :each |
 		self assert: each dailyNeed equals: 10 * each householdSize ]
+]
+
+{ #category : 'tests' }
+FEBModelTest >> testTheSameRandomSeedGivesTheSameSimulation [
+
+	| first second |
+	first := self mealsEatenInFiveStepsWithSeed: 42.
+	second := self mealsEatenInFiveStepsWithSeed: 42.
+
+	self denyEmpty: first.
+	self
+		assert: first = second
+		description:
+		'Two simulations from the same seed fed households differently'
 ]
 
 { #category : 'tests' }

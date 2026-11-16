@@ -111,3 +111,17 @@ FEBFoodBatchTest >> testFoodTakenOutOfTheFridgeKeepsTheShareOfShelfLifeItHasLeft
 	batch moveOutsideFridge.
 	self assert: (self daysUntilExpiryOf: batch) equals: 2
 ]
+
+{ #category : 'tests' }
+FEBFoodBatchTest >> testMovingFoodInAndOutOfTheFridgeNeverMakesItFresher [
+	"With 1 of its 2 days left outside the fridge, moving it in and back out must not leave it more than 1 day"
+
+	| batch |
+	batch := self batchOf: animalProteins inFridge: false.
+	batch becomeOneDayOlder.
+
+	batch moveToFridge.
+	batch moveOutsideFridge.
+
+	self assert: (self daysUntilExpiryOf: batch) <= 1
+]
