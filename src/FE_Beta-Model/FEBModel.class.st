@@ -242,23 +242,19 @@ FEBModel >> initializePreferences [
 
 { #category : 'initialization' }
 FEBModel >> initializeStrategies [
-
 	"You can change this number to be different than 50%"
-	| proportion numberOfAgents shuffledAgents |
-	
-	"Create a copy of agents collection where agents are shuffled randomly. Now if we take the first half of that collection, this will give us exactly 50% of agents selected randomly. And the second half is another 50%"
+
+	| proportion shuffledAgents numberOfMoneySavers |
+	"Shuffle the agents, so that the first part of them is a random selection of the given proportion, and the rest is the other part"
 	shuffledAgents := self agents asOrderedCollection shuffle.
-	
+
 	proportion := 0.5.
-	numberOfAgents := self agents size.
+	numberOfMoneySavers := (proportion * shuffledAgents size) asInteger.
 
-	"First part - from 1 to p*N where N is the number of agents and p is proportion"
-	(1 to: (proportion * numberOfAgents) asInteger) do: [ :i |
-		(shuffledAgents at: i) beMoneySaver ].
-
-	"Second part - from p*N to N (all other agents)"
-	((proportion * numberOfAgents) asInteger to: numberOfAgents) do: [ :i |
-		(shuffledAgents at: i) beTimeSaver ].
+	(shuffledAgents first: numberOfMoneySavers) do: [ :each |
+		each beMoneySaver ].
+	(shuffledAgents allButFirst: numberOfMoneySavers) do: [ :each |
+		each beTimeSaver ]
 ]
 
 { #category : 'initialization' }

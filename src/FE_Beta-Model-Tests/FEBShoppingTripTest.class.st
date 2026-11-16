@@ -119,6 +119,30 @@ FEBShoppingTripTest >> testDoesNotGoFurtherThanItsTimeAllows [
 ]
 
 { #category : 'tests' }
+FEBShoppingTripTest >> testFoodThatDoesNotFitInTheFridgeIsKeptOutside [
+	"It buys 10 meals of animal proteins for today and 6 for storage, and its fridge holds 6"
+
+	| inventory |
+	household foodPreferenceProportions:
+		{ (animalProteins -> 1.0) } asDictionary.
+	household inventory batches removeAll.
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: animalProteins.
+
+	household goShopping.
+
+	inventory := household inventory.
+	self
+		assert: (inventory quantityInCategory: animalProteins)
+		equals: 16.
+	self assert: inventory quantityInFridge equals: 6
+]
+
+{ #category : 'tests' }
 FEBShoppingTripTest >> testGoesShoppingWhenItHasNoFood [
 
 	self assert: household shouldGoShopping

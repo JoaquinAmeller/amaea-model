@@ -263,10 +263,9 @@ FEBHousehold >> buildShoppingList [
 { #category : 'accessing' }
 FEBHousehold >> buyFoodBatches: batches for: moneySpent [
 
-	batches do: [ :each |
-		inventory addBatch: each ].
+	batches do: [ :each | self store: each ].
 
-	remainingMoney := remainingMoney - moneySpent.
+	remainingMoney := remainingMoney - moneySpent
 ]
 
 { #category : 'accessing' }
@@ -805,6 +804,19 @@ FEBHousehold >> step [
 	
 	inventory becomeOneDayOlder.
 
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> store: aBatch [
+	"Put aBatch in the inventory. Food meant for the fridge goes in only as far as the fridge has room, and the rest is kept outside it."
+
+	| freeSpace |
+	freeSpace := inventory freeFridgeSpace.
+	(aBatch isInFridge and: [ aBatch quantity > freeSpace ]) ifTrue: [
+			freeSpace > 0 ifTrue: [
+				inventory addBatch: (aBatch extractQuantity: freeSpace) ].
+			aBatch moveOutsideFridge ].
+	inventory addBatch: aBatch
 ]
 
 { #category : 'adding' }

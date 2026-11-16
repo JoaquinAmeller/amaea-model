@@ -185,7 +185,8 @@ FEBFoodInventory >> removeBatchIfEmpty: aBatch [
 { #category : 'removing' }
 FEBFoodInventory >> removeEmptyBatches [
 
-	batches do: [ :batch | self removeBatchIfEmpty: batch ]
+	(batches select: [ :each | each isEmpty ]) do: [ :each |
+		self removeBatch: each ]
 ]
 
 { #category : 'removing' }

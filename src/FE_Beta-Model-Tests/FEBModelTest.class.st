@@ -35,6 +35,12 @@ FEBModelTest >> dummyModel [
 ]
 
 { #category : 'tests' }
+FEBModelTest >> testAModelWithoutHouseholdsCanGiveOutStrategies [
+
+	self shouldnt: [ FEBModel new initializeStrategies ] raise: Error
+]
+
+{ #category : 'tests' }
 FEBModelTest >> testASimulationKeepsFoodAndMoneyValid [
 
 	| model inventories |
