@@ -164,8 +164,54 @@ FEBHouseholdTest >> testEveryHouseholdIsEitherHungryUnsatiatedOrFull [
 ]
 
 { #category : 'tests' }
+FEBHouseholdTest >> testFoodSpoilingTonightIsNotCountedForTomorrow [
+	"Households shop after eating, for the next day. Fruits and vegetables in their last day will be gone tomorrow."
+
+	| shoppingList |
+	household inventory addBatch:
+		(FEBFoodBatch category: stapleFood quantity: 30 fridge: false).
+	household inventory addBatch: (FEBFoodBatch
+			 category: fruitsAndVegetables
+			 quantity: 18
+			 fridge: false
+			 remainingDays: 1).
+	household inventory addBatch:
+		(FEBFoodBatch category: animalProteins quantity: 6 fridge: true).
+	household inventory addBatch:
+		(FEBFoodBatch category: animalProteins quantity: 6 fridge: false).
+
+	shoppingList := household buildShoppingList.
+
+	self assert: household shouldGoShopping.
+	self
+		assert: (shoppingList essentialNeedOf: fruitsAndVegetables)
+		equals: 3.
+	self
+		assert: (shoppingList storageNeedOf: fruitsAndVegetables)
+		equals: 15
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testShoppingListWhenEnoughOfEveryPreferredFood [
+
+	household inventory addBatch:
+		(FEBFoodBatch category: stapleFood quantity: 30 fridge: false).
+	household inventory addBatch:
+		(FEBFoodBatch
+			 category: fruitsAndVegetables
+			 quantity: 18
+			 fridge: false).
+	household inventory addBatch:
+		(FEBFoodBatch category: animalProteins quantity: 6 fridge: true).
+	household inventory addBatch:
+		(FEBFoodBatch category: animalProteins quantity: 6 fridge: false).
+
+	self deny: household buildShoppingList hasAnyNeeds
+]
+
+{ #category : 'tests' }
 FEBHouseholdTest >> testShoppingListWhenLotsOfFood [
-	"Far more than six days of food in total, so nothing is needed, even though it is all Staple food"
+	"Lots of staple food covers today and storage for staple food only. The other preferred foods are still needed, for today and for storage"
 
 	| shoppingList |
 	household inventory addBatch:
@@ -173,7 +219,16 @@ FEBHouseholdTest >> testShoppingListWhenLotsOfFood [
 
 	shoppingList := household buildShoppingList.
 
-	self deny: shoppingList hasAnyNeeds
+	self assert: (shoppingList essentialNeedOf: stapleFood) equals: 0.
+	self
+		assert: (shoppingList essentialNeedOf: fruitsAndVegetables)
+		equals: 3.
+	self assert: (shoppingList essentialNeedOf: animalProteins) equals: 2.
+
+	self
+		assert: (shoppingList storageNeedOf: fruitsAndVegetables)
+		equals: 15.
+	self assert: (shoppingList storageNeedOf: animalProteins) equals: 6
 ]
 
 { #category : 'tests' }
@@ -198,7 +253,7 @@ FEBHouseholdTest >> testShoppingListWhenNoFood [
 
 { #category : 'tests' }
 FEBHouseholdTest >> testShoppingListWhenSomeFood [
-	"4 meals leave 6 essential ones, split by the preferences and rounded down, with at least 1 per category. They are less than a day, so storage is the same as with no food."
+	"4 meals of staple food cover 4 of today's 5. The other foods are all still needed for today. None of it is beyond today's share, so storage is the same as with no food."
 
 	| shoppingList |
 	household inventory addBatch:
@@ -206,11 +261,11 @@ FEBHouseholdTest >> testShoppingListWhenSomeFood [
 
 	shoppingList := household buildShoppingList.
 
-	self assert: (shoppingList essentialNeedOf: stapleFood) equals: 3.
+	self assert: (shoppingList essentialNeedOf: stapleFood) equals: 1.
 	self
 		assert: (shoppingList essentialNeedOf: fruitsAndVegetables)
-		equals: 1.
-	self assert: (shoppingList essentialNeedOf: animalProteins) equals: 1.
+		equals: 3.
+	self assert: (shoppingList essentialNeedOf: animalProteins) equals: 2.
 
 	self assert: (shoppingList storageNeedOf: stapleFood) equals: 29.
 	self

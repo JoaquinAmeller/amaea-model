@@ -95,6 +95,18 @@ FEBFoodInventoryTest >> testEmptyingTheTrashbinThrowsTheSpoiledFoodAway [
 ]
 
 { #category : 'tests' }
+FEBFoodInventoryTest >> testFoodLeftTomorrowLeavesOutFoodInItsLastDay [
+
+	self add: 3 of: dairy expiringIn: 1.
+	self add: 4 of: dairy expiringIn: 2.
+	self add: 5 of: rice expiringIn: 2.
+
+	self
+		assert: (inventory quantityLeftTomorrowInCategory: dairy)
+		equals: 4
+]
+
+{ #category : 'tests' }
 FEBFoodInventoryTest >> testFreeFridgeSpaceIsTheCapacityNotYetUsed [
 
 	inventory fridgeCapacity: 10.

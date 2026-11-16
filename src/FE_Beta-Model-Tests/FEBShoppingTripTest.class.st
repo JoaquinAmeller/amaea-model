@@ -590,6 +590,39 @@ FEBShoppingTripTest >> testWalksFurtherForFoodForTodayThanForStorage [
 	self assert: (self inventoryOf: outlet) totalQuantity < 100
 ]
 
+{ #category : 'tests' }
+FEBShoppingTripTest >> testWhenMoneyIsShortItBuysItsMostPreferredFoodFirst [
+	"25 pays for 5 of today's 10 meals: 5 staple food, its most preferred"
+
+	| fruitsAndVegetables |
+	fruitsAndVegetables := model foodCategoryNamed:
+		                       'Fruits and vegetables'.
+	household foodPreferenceProportions: {
+			(stapleFood -> 0.5).
+			(fruitsAndVegetables -> 0.3).
+			(animalProteins -> 0.2) } asDictionary.
+	household inventory batches removeAll.
+	self giveMoney: 25.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: animalProteins.
+	(self inventoryOf: household outlets first) addBatch: (FEBFoodBatch
+			 category: fruitsAndVegetables
+			 quantity: 100
+			 fridge: false).
+	(self inventoryOf: household outlets first) addBatch:
+		(FEBFoodBatch category: stapleFood quantity: 100 fridge: false).
+
+	household goShopping.
+
+	self
+		assert: (household inventory quantityInCategory: stapleFood)
+		equals: 5.
+	self assert: household inventory totalQuantity equals: 5
+]
+
 { #category : 'helpers' }
 FEBShoppingTripTest >> walksAnHourToStockUpWith: aStrategySelector [
 	"Answer whether a household with today's food goes to an outlet 60 minutes away with that strategy"

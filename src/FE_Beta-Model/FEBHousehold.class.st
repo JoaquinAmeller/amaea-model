@@ -116,35 +116,36 @@ FEBHousehold class >> minHouseholdSize: anObject [
 
 { #category : 'adding' }
 FEBHousehold >> addEssentialMealsToTheShoppingList: aShoppingList [
+	"Add, for each preferred category, the meals missing from its share of tomorrow's need. Food that will be expired tomorrow does not count."
 
-	| missingMeals remainingMeals quantity |
-	
-	missingMeals := (dailyNeed - self totalUsableFoodQuantity) max: 0.
-	remainingMeals := missingMeals.
-	
-	foodPreferenceProportions keysAndValuesDo: [ :category :proportion | 
-		remainingMeals > 0 ifTrue: [ 
-			quantity := (missingMeals * proportion) asInteger max: 1.
-			aShoppingList addEssentialNeedOf: category quantity: quantity.
-			remainingMeals := remainingMeals - quantity ] ]
+	(self mealsPerCategoryFor: dailyNeed) keysAndValuesDo: [
+			:category
+			:meals |
+			| missingMeals |
+			missingMeals := meals
+			                -
+			                (inventory quantityLeftTomorrowInCategory: category).
+			missingMeals > 0 ifTrue: [
+				aShoppingList addEssentialNeedOf: category quantity: missingMeals ] ]
 ]
 
 { #category : 'adding' }
 FEBHousehold >> addStorageNeedsToTheShoppingList: aShoppingList [
+	"Add, for each preferred category, the meals missing from its share of the following days' needs, counting only the food left tomorrow beyond its share of tomorrow's need. Then replace the perishable food that will not fit in the fridge."
 
-	| storageHorizon availableMealsInStorage missingMeals remainingMeals quantity |
+	| storageHorizon oneDayOfMeals |
 	storageHorizon := 5.
-	
-	availableMealsInStorage := (self totalUsableFoodQuantity - dailyNeed) max: 0.
-	missingMeals := (dailyNeed * storageHorizon) - availableMealsInStorage.
-	remainingMeals := missingMeals.
-	
-	foodPreferenceProportions keysAndValuesDo: [ :category :proportion | 
-		remainingMeals > 0 ifTrue: [ 
-			quantity := (missingMeals * proportion) asInteger max: 1.
-			aShoppingList addStorageNeedOf: category quantity: quantity.
-			remainingMeals := remainingMeals - quantity ] ].
-	
+	oneDayOfMeals := self mealsPerCategoryFor: dailyNeed.
+
+	(self mealsPerCategoryFor: dailyNeed * storageHorizon)
+		keysAndValuesDo: [ :category :meals |
+				| storedMeals missingMeals |
+				storedMeals := (inventory quantityLeftTomorrowInCategory: category)
+				               - (oneDayOfMeals at: category) max: 0.
+				missingMeals := meals - storedMeals.
+				missingMeals > 0 ifTrue: [
+					aShoppingList addStorageNeedOf: category quantity: missingMeals ] ].
+
 	self substitutePerishableFoodThatWontFitInFridge: aShoppingList
 ]
 
@@ -446,10 +447,11 @@ FEBHousehold >> hasFoodForOneDay [
 
 { #category : 'asserting' }
 FEBHousehold >> hasPreferredFoodForOneDay [
+	"Answer whether, tomorrow, the household will still have its share of every preferred category"
 
-	foodPreferenceProportions keysAndValuesDo: [ :category :proportion | 
-		 (inventory quantityInCategory: category) < (proportion * dailyNeed) ifTrue: [ ^ false ] ].
-	^true 
+	^ (self mealsPerCategoryFor: dailyNeed) associations allSatisfy: [
+		  :each |
+		  (inventory quantityLeftTomorrowInCategory: each key) >= each value ]
 ]
 
 { #category : 'accessing' }

@@ -98,8 +98,9 @@ FEBShoppingList >> hasStorageNeeds [
 FEBShoppingList >> initialize [
 
 	super initialize.
-	essentialNeeds := Dictionary new.
-	storageNeeds := Dictionary new
+	"Needs are kept in the order they are added, which is the order in which they are bought"
+	essentialNeeds := OrderedDictionary new.
+	storageNeeds := OrderedDictionary new
 ]
 
 { #category : 'as yet unclassified' }

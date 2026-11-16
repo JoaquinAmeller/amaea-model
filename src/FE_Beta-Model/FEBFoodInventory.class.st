@@ -157,6 +157,16 @@ FEBFoodInventory >> quantityInFridge [
 ]
 
 { #category : 'as yet unclassified' }
+FEBFoodInventory >> quantityLeftTomorrowInCategory: aCategory [
+	"Answer the quantity of aCategory that will not be expired tomorrow"
+
+	^ ((self batchesOfCategory: aCategory) reject: [ :each |
+		   each willExpireTomorrow ])
+		  sum: [ :each | each quantity ]
+		  ifEmpty: [ 0 ]
+]
+
+{ #category : 'as yet unclassified' }
 FEBFoodInventory >> recordInventoryHistory [
 
 	| record |
