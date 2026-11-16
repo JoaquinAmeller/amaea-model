@@ -148,6 +148,16 @@ FEBHousehold >> addStorageNeedsToTheShoppingList: aShoppingList [
 	self substitutePerishableFoodThatWontFitInFridge: aShoppingList
 ]
 
+{ #category : 'pov' }
+FEBHousehold >> aspectCaloricAdequacyIndicator: look [
+	<aspect>
+	
+	look
+		color: self caloricAdequacyColor;
+		shape: self shapeOfPovBasedOnStrategy;
+		size: self sizeOfPovBasedOnHouseholdSize
+]
+
 { #category : 'as yet unclassified' }
 FEBHousehold >> availableMoneyForStorage [
 	"Money that can be used to buy food for storage (the non-essential food)"
@@ -310,6 +320,21 @@ FEBHousehold >> eat: aNumberOfMeals substitutesFor: aCategory [
 ]
 
 { #category : 'consuming' }
+FEBHousehold >> eatAnyFood: aNumberOfMeals [
+	"Eat up to aNumberOfMeals of whatever food is left, preferred categories first. Answer the categories of the meals eaten."
+
+	| eatenCategories |
+	eatenCategories := OrderedCollection new.
+	((inventory nonExpiredBatches collect: [ :each | each category ])
+		 asSet asArray sort: [ :a :b |
+		 (self preferenceRankOf: a) <= (self preferenceRankOf: b) ]) do: [
+			:category |
+			eatenCategories addAll:
+				(self eat: aNumberOfMeals - eatenCategories size mealsOf: category) ].
+	^ eatenCategories
+]
+
+{ #category : 'consuming' }
 FEBHousehold >> eatFoodInItsLastDay [
 	"Eat the food that will be expired tomorrow, up to the daily need, preferred categories first. Answer the categories of the meals eaten."
 
@@ -327,14 +352,14 @@ FEBHousehold >> eatFoodInItsLastDay [
 
 { #category : 'consuming' }
 FEBHousehold >> eatMealsByPreference: aNumberOfMeals [
-	"Eat aNumberOfMeals split by foodPreferenceProportions. Every category eats its own share first. Then the meals a category could not eat go along substitutionList, to whatever food is left. Answer the categories of the meals eaten."
+	"Eat aNumberOfMeals split by foodPreferenceProportions. Every category eats its own share first. Then the meals a category could not eat go along substitutionList, to whatever food is left. Meals still missing come from any food left, so the household only eats less when it runs out of food. Answer the categories of the meals eaten."
 
 	| eatenCategories missingMeals |
 	eatenCategories := OrderedCollection new.
 	missingMeals := OrderedDictionary new.
-	
-	(self mealsPerCategoryFor: aNumberOfMeals)
-		keysAndValuesDo: [ :category :meals |
+	(self mealsPerCategoryFor: aNumberOfMeals) keysAndValuesDo: [
+			:category
+			:meals |
 			| ownMeals |
 			ownMeals := self eat: meals mealsOf: category.
 			eatenCategories addAll: ownMeals.
@@ -342,6 +367,9 @@ FEBHousehold >> eatMealsByPreference: aNumberOfMeals [
 
 	missingMeals keysAndValuesDo: [ :category :meals |
 		eatenCategories addAll: (self eat: meals substitutesFor: category) ].
+
+	eatenCategories addAll:
+		(self eatAnyFood: aNumberOfMeals - eatenCategories size).
 	^ eatenCategories
 ]
 
@@ -649,8 +677,11 @@ FEBHousehold >> povSatietyIndicator [
 
 { #category : 'consuming' }
 FEBHousehold >> preferenceRankOf: aCategory [
+	"Answer the position of aCategory in the preferences. A category outside them comes after all of them."
 
-	^ foodPreferenceProportions keys indexOf: aCategory
+	^ foodPreferenceProportions keys
+		  indexOf: aCategory
+		  ifAbsent: [ foodPreferenceProportions size + 1 ]
 ]
 
 { #category : 'accessing' }

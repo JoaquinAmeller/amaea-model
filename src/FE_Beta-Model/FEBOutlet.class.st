@@ -26,6 +26,16 @@ FEBOutlet class >> restockAmount: anObject [
 	restockAmount := anObject
 ]
 
+{ #category : 'as yet unclassified' }
+FEBOutlet >> aspectDefault: look [
+	<aspect>
+	
+	look
+		color: Color gray;
+		shape: #square;
+		size: 1
+]
+
 { #category : 'initialization' }
 FEBOutlet >> initialize [
 

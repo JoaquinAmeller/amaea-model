@@ -8,6 +8,12 @@ Class {
 	#package : 'FE_Beta-Model'
 }
 
+{ #category : 'accessing' }
+FEBCell >> aspectDefault: look [ 
+	<aspect>
+	look color: Color white
+]
+
 { #category : 'initialization' }
 FEBCell >> initialize [
 

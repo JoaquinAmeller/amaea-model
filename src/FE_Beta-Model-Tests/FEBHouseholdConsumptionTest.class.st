@@ -144,7 +144,20 @@ FEBHouseholdConsumptionTest >> testEatsEachCategoryInItsProportion [
 ]
 
 { #category : 'tests' }
-FEBHouseholdConsumptionTest >> testEatsLessWhenNoSubstituteIsLeft [
+FEBHouseholdConsumptionTest >> testEatsFoodOutsideThePreferencesRatherThanStayHungry [
+
+	| meals |
+	self useSomeFuckAboutSpoil.
+	self add: 100 of: processedFood expiringIn: 5.
+	household substitutionList: Dictionary new.
+
+	meals := household consumeFood.
+
+	self assert: (self mealsOf: processedFood in: meals) equals: 50
+]
+
+{ #category : 'tests' }
+FEBHouseholdConsumptionTest >> testEatsLessOnlyWhenNoFoodIsLeft [
 
 	| meals |
 	self useSomeFuckAboutSpoil.
@@ -154,7 +167,37 @@ FEBHouseholdConsumptionTest >> testEatsLessWhenNoSubstituteIsLeft [
 
 	meals := household consumeFood.
 
-	self assert: meals size equals: 35
+	self assert: meals size equals: 35.
+	self assert: household inventory totalQuantity equals: 0
+]
+
+{ #category : 'tests' }
+FEBHouseholdConsumptionTest >> testEatsTheDailyNeedFromFoodNoSubstitutionLeadsTo [
+	"No substitution leads to Animal proteins, but it is the only food there is, so the household eats 50 meals of it rather than its 25-meal share."
+
+	| meals |
+	self useSomeFuckAboutSpoil.
+	self add: 100 of: animalProteins expiringIn: 5.
+
+	meals := household consumeFood.
+
+	self assert: (self mealsOf: animalProteins in: meals) equals: 50
+]
+
+{ #category : 'tests' }
+FEBHouseholdConsumptionTest >> testEatsTheLeftoversOfThePreferredCategoriesFirst [
+	"The 15 Dairy meals find no Dairy, Staple food or Processed food. They come from the leftovers instead: the 5 Animal proteins left after its share, then 10 Fruits and vegetables."
+
+	| meals |
+	self useSomeFuckAboutSpoil.
+	self add: 30 of: animalProteins expiringIn: 5.
+	self add: 30 of: fruitsAndVegetables expiringIn: 5.
+
+	meals := household consumeFood.
+
+	self assert: meals size equals: 50.
+	self assert: (self mealsOf: animalProteins in: meals) equals: 30.
+	self assert: (self mealsOf: fruitsAndVegetables in: meals) equals: 20
 ]
 
 { #category : 'tests' }
