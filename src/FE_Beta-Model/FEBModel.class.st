@@ -78,50 +78,53 @@ FEBModel >> households [
 
 { #category : 'as yet unclassified' }
 FEBModel >> initBigGridScenario [
+
 	<init>
+	<perspective: #perspectiveSatiety>
 	| plots |
-	
-	numberOfHouseholds:= 100.
-	numberOfOutlets:= 40.
-	
+	numberOfHouseholds := 100.
+	numberOfOutlets := 40.
+
 	self
 		createGridNumberOfRows: 30
 		numberOfColumns: 30
 		neighbourhood: 8
 		closed: true.
-		
-	plots := self @@ FEBCell.
-	
-	self initializeFoodCategories.
-	self initializeAgents.
 
-FEBHousehold activePovSelector: #povSatietyIndicator 
+	plots := self @@ FEBCell.
+
+	self initializeFoodCategories.
+	self initializeAgents
 ]
 
 { #category : 'as yet unclassified' }
 FEBModel >> initCustomizable [
+
 	<init>
+	<perspective: #perspectiveSatietyAndOutletImages>
 	| plots |
-	
 	self
-		createGridNumberOfRows: 30
-		numberOfColumns: 30
+		createGridNumberOfRows: 6
+		numberOfColumns: 6
 		neighbourhood: 8
 		closed: true.
-		
+
 	plots := self @@ FEBCell.
-	
+
+	FEBOutlet restockAmount: 3000.
+
 	self initializeFoodCategories.
-	self initializeAgents.
+	self initializeAgents
 ]
 
 { #category : 'as yet unclassified' }
 FEBModel >> initUnconstraintedScenario [
-	<init>
-	| plots |
 
+	<init>
+	<perspective: #perspectiveSatietyAndOutletImages>
+	| plots |
 	"Model parameters"
-	numberOfHouseholds  := 2.
+	numberOfHouseholds := 2.
 	numberOfOutlets := 20.
 
 	"Entity class parameters"
@@ -129,20 +132,17 @@ FEBModel >> initUnconstraintedScenario [
 	FEBHousehold availableTimePerStep: 24.
 	FEBHousehold fridgeCapacity: 500.
 	FEBOutlet restockAmount: 300.
-	
+
 	self
 		createGridNumberOfRows: 5
 		numberOfColumns: 5
 		neighbourhood: 8
 		closed: true.
-		
-	plots := self @@ FEBCell.
-	
-	self initializeFoodCategories.
-	self initializeAgents.
 
-	FEBHousehold activePovSelector: #povSatietyIndicator.
-	FEBOutlet activePovSelector: #povImage
+	plots := self @@ FEBCell.
+
+	self initializeFoodCategories.
+	self initializeAgents
 ]
 
 { #category : 'as yet unclassified' }
@@ -415,6 +415,51 @@ FEBModel >> numberOfUnsatiatedPeople [
 FEBModel >> outlets [
 
  ^ self @@ FEBOutlet .
+]
+
+{ #category : 'perspectives' }
+FEBModel >> perspectiveCaloricAdequacy [
+
+	<perspective>
+	^ CMPerspective new
+		  show: FEBHousehold as: #aspectCaloricAdequacyIndicator:;
+		  yourself
+]
+
+{ #category : 'perspectives' }
+FEBModel >> perspectiveHealthyDiet [
+
+	<perspective>
+	^ CMPerspective new
+		  show: FEBHousehold as: #aspectHealthyDiet:;
+		  yourself
+]
+
+{ #category : 'perspectives' }
+FEBModel >> perspectiveProteinAdequacy [
+
+	<perspective>
+	^ CMPerspective new
+		  show: FEBHousehold as: #aspectProteinAdequacyIndicator:;
+		  yourself
+]
+
+{ #category : 'perspectives' }
+FEBModel >> perspectiveSatiety [
+
+	<perspective>
+	^ CMPerspective new
+		  show: FEBHousehold as: #aspectSatietyIndicator:;
+		  yourself
+]
+
+{ #category : 'perspectives' }
+FEBModel >> perspectiveSatietyAndOutletImages [
+
+	<perspective>
+	^ self perspectiveSatiety
+		  show: FEBOutlet as: #aspectImage:;
+		  yourself
 ]
 
 { #category : 'as yet unclassified' }

@@ -36,6 +36,16 @@ FEBOutlet >> aspectDefault: look [
 		size: 1
 ]
 
+{ #category : 'aspects' }
+FEBOutlet >> aspectImage: look [
+
+	<aspect>
+	look
+		tile: #outlet;
+		shape: #square;
+		size: 1
+]
+
 { #category : 'initialization' }
 FEBOutlet >> initialize [
 

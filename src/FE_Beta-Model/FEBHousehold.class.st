@@ -158,6 +158,38 @@ FEBHousehold >> aspectCaloricAdequacyIndicator: look [
 		size: self sizeOfPovBasedOnHouseholdSize
 ]
 
+{ #category : 'aspects' }
+FEBHousehold >> aspectHealthyDiet: look [
+
+	<aspect>
+	look
+		color: (self isHavingHealthyDiet
+				 ifTrue: [ CMColor green ]
+				 ifFalse: [ CMColor red ]);
+		shape: self shapeOfPovBasedOnStrategy;
+		size: self sizeOfPovBasedOnHouseholdSize
+]
+
+{ #category : 'aspects' }
+FEBHousehold >> aspectProteinAdequacyIndicator: look [
+
+	<aspect>
+	look
+		color: self proteinAdequacyColor;
+		shape: self shapeOfPovBasedOnStrategy;
+		size: self sizeOfPovBasedOnHouseholdSize
+]
+
+{ #category : 'aspects' }
+FEBHousehold >> aspectSatietyIndicator: look [
+
+	<aspect>
+	look
+		color: self satietyIndicatorColor;
+		shape: self shapeOfPovBasedOnStrategy;
+		size: self sizeOfPovBasedOnHouseholdSize
+]
+
 { #category : 'as yet unclassified' }
 FEBHousehold >> availableMoneyForStorage [
 	"Money that can be used to buy food for storage (the non-essential food)"
