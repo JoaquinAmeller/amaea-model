@@ -171,6 +171,45 @@ FEBShoppingTripTest >> setUp [
 ]
 
 { #category : 'tests' }
+FEBShoppingTripTest >> testADayRecordsTheMoneyAndTimeOfItsShopping [
+	"The outlet is 2 cells away, 10 minutes of walking"
+
+	| day |
+	self giveMoney: 100.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: stapleFood.
+
+	household goShopping.
+
+	day := household today.
+	self assert: day wentShopping.
+	self assert: day moneyAvailable equals: 100.
+	self assert: day moneySpent equals: 100 - household remainingMoney.
+	self assert: day moneySpent > 0.
+	self assert: day timeAvailable equals: 2 hours.
+	self assert: day timeSpent equals: 10 minutes
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testADayWithoutShoppingRecordsNoTrip [
+	"20 meals: 10 eaten today, and 10 left, enough for tomorrow"
+
+	| day |
+	self give: 20 of: stapleFood.
+
+	household step.
+
+	day := household today.
+	self deny: day wentShopping.
+	self assert: day purchases isEmpty.
+	self assert: day moneySpent equals: 0.
+	self assert: day timeSpent equals: 0 minutes
+]
+
+{ #category : 'tests' }
 FEBShoppingTripTest >> testADesperateSaverSpendsLessMoneyOnStorageThanARichBastard [
 
 	self assert: (self foodBoughtToStockUpBy: #beDesperateSaver)
@@ -217,11 +256,87 @@ FEBShoppingTripTest >> testAMoneySaverSpendsLessMoneyOnStorageThanATimeSaver [
 ]
 
 { #category : 'tests' }
+FEBShoppingTripTest >> testAPurchaseIsRecordedTheSameWayByTheHouseholdAndTheOutlet [
+	"The household buys today's 10 meals and 50 for storage, in two purchases"
+
+	| outlet purchases |
+	self giveMoney: 1000.
+	outlet := self
+		          outletAt: 1
+		          at: 3
+		          stocking: 100
+		          of: stapleFood.
+
+	household goShopping.
+
+	purchases := household today purchases.
+	self
+		assert: (purchases collect: [ :each | each quantity ]) asArray
+		equals: #( 10 50 ).
+	self assert: (purchases sum: [ :each | each price ]) equals: 300.
+	purchases do: [ :each |
+			self assert: each household equals: household.
+			self assert: each outlet equals: outlet.
+			self assert: each category equals: stapleFood ].
+	self assert: outlet today sales asArray equals: purchases asArray
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testAPurchaseRecordsHowMuchWentIntoTheFridge [
+	"As in testFoodThatDoesNotFitInTheFridgeIsKeptOutside: 16 meals of animal proteins bought, 6 in the fridge"
+
+	| purchases |
+	household foodPreferenceProportions:
+		{ (animalProteins -> 1.0) } asDictionary.
+	household inventory batches removeAll.
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: animalProteins.
+
+	household goShopping.
+
+	purchases := household today purchases.
+	self assert: (purchases sum: [ :each | each quantity ]) equals: 16.
+	self
+		assert: (purchases sum: [ :each | each quantityInFridge ])
+		equals: 6
+]
+
+{ #category : 'tests' }
 FEBShoppingTripTest >> testATimeSaverSpendsLessTimeStockingUpThanAMoneySaver [
 	"With the 2 hours a household has, an outlet 60 minutes away is within reach of a household keeping back little of its time, and out of reach of one keeping back a lot"
 
 	self assert: (self walksAnHourToStockUpWith: #beMoneySaver).
 	self deny: (self walksAnHourToStockUpWith: #beTimeSaver)
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testAnOutletsDayRecordsItsSalesToEachHousehold [
+
+	| outlet neighbour |
+	self giveMoney: 1000.
+	outlet := self
+		          outletAt: 1
+		          at: 3
+		          stocking: 100
+		          of: stapleFood.
+	neighbour := self neighbourAt: 3 at: 1.
+
+	household goShopping.
+	neighbour goShopping.
+
+	self
+		assert:
+		(outlet today sales collect: [ :each | each household ]) asSet
+		equals: {
+				household.
+				neighbour } asSet.
+	self
+		assert: (outlet today sales sum: [ :each | each quantity ])
+		equals: 100
 ]
 
 { #category : 'tests' }

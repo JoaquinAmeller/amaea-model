@@ -5,7 +5,8 @@ Class {
 		'inventory',
 		'conventionalFoodInventory',
 		'healthyFoodInventory',
-		'prices'
+		'prices',
+		'history'
 	],
 	#classInstVars : [
 		'restockAmount'
@@ -46,15 +47,22 @@ FEBOutlet >> aspectImage: look [
 		size: 1
 ]
 
+{ #category : 'history' }
+FEBOutlet >> history [
+
+	^ history
+]
+
 { #category : 'initialization' }
 FEBOutlet >> initialize [
 
 	super initialize.
-	
+
 	self initializePrices.
-	
+
+	history := FEBHistory new.
 	inventory := FEBFoodInventory new.
-	self restock.
+	self restock
 ]
 
 { #category : 'initialization' }
@@ -131,18 +139,25 @@ FEBOutlet >> restockAmount [
 
 { #category : 'accessing' }
 FEBOutlet >> sellCategory: aCategory quantityUpTo: aFoodQuantity withMoneyUpTo: aMoneyAmount to: aHousehold [
+	"Sell what can be sold and paid for. The sale is recorded, as one purchase, in today's records of the outlet and of the household. Answer the quantity sold."
 
-	| batches quantity price |
-	
+	| batches quantity purchase |
 	batches := self
-		take: aCategory
-		quantityUpTo: aFoodQuantity
-		withMoneyUpTo: aMoneyAmount.
-	
-	quantity := batches sum: #quantity.
-	price := quantity * (self pricePerUnitFor: aCategory).
-	
-	aHousehold buyFoodBatches: batches for: price.
+		           take: aCategory
+		           quantityUpTo: aFoodQuantity
+		           withMoneyUpTo: aMoneyAmount.
+
+	quantity := batches sum: [ :each | each quantity ] ifEmpty: [ 0 ].
+	quantity = 0 ifTrue: [ ^ 0 ].
+
+	purchase := FEBPurchase
+		            household: aHousehold
+		            outlet: self
+		            category: aCategory
+		            quantity: quantity
+		            price: quantity * (self pricePerUnitFor: aCategory).
+	aHousehold receive: batches for: purchase.
+	self today addSale: purchase.
 	^ quantity
 ]
 
@@ -195,4 +210,13 @@ FEBOutlet >> take: category quantityUpTo: requestedAmount withMoneyUpTo: availab
 	amount := amount min: affordableAmount.
 
 	^ self take: category quantity: amount
+]
+
+{ #category : 'history' }
+FEBOutlet >> today [
+	"Answer the record of the current time step, where everything the outlet does now is recorded"
+
+	^ history
+		  dayAt: self currentTimeStep
+		  ifAbsentPut: [ FEBOutletDay step: self currentTimeStep ]
 ]

@@ -262,14 +262,6 @@ FEBHousehold >> buildShoppingList [
 ]
 
 { #category : 'accessing' }
-FEBHousehold >> buyFoodBatches: batches for: moneySpent [
-
-	batches do: [ :each | self store: each ].
-
-	remainingMoney := remainingMoney - moneySpent
-]
-
-{ #category : 'accessing' }
 FEBHousehold >> caloricAdequacyColor [
 
 	history isEmpty ifTrue: [ ^ CMColor gray ].
@@ -449,12 +441,17 @@ FEBHousehold >> foodPreferenceProportions: aDictionary [
 
 { #category : 'asserting' }
 FEBHousehold >> goShopping [
-	<action> 
+
+	<action>
 	| shoppingList |
 	self resetRemainingTimeAndMoney.
 	shoppingList := self buildShoppingList.
 	shoppingStrategy shopFor: self using: shoppingList.
-	self reconsiderPreference.
+	self today
+		recordShoppingWithMoney: availableMoneyPerStep
+		time: availableTimePerStep
+		timeSpent: availableTimePerStep - remainingTime.
+	self reconsiderPreference
 ]
 
 { #category : 'asserting' }
@@ -757,6 +754,17 @@ FEBHousehold >> proteinAdequacyScoreOn: aDay [
 	  / (60 * householdSize)
 ]
 
+{ #category : 'buying' }
+FEBHousehold >> receive: aCollectionOfBatches for: aPurchase [
+	"Store the food of aPurchase, record how much of it went into the fridge, pay for it, and record it in today's record"
+
+	aPurchase quantityInFridge: (aCollectionOfBatches
+			 inject: 0
+			 into: [ :sum :each | sum + (self store: each) ]).
+	remainingMoney := remainingMoney - aPurchase price.
+	self today addPurchase: aPurchase
+]
+
 { #category : 'accessing' }
 FEBHousehold >> reconsiderPreference [
 
@@ -851,17 +859,21 @@ FEBHousehold >> step [
 
 ]
 
-{ #category : 'accessing' }
+{ #category : 'buying' }
 FEBHousehold >> store: aBatch [
-	"Put aBatch in the inventory. Food meant for the fridge goes in only as far as the fridge has room, and the rest is kept outside it."
+	"Put aBatch in the inventory. Food meant for the fridge goes in only as far as the fridge has room, and the rest is kept outside it. Answer the quantity put in the fridge."
 
-	| freeSpace |
+	| freeSpace quantityInFridge |
 	freeSpace := inventory freeFridgeSpace.
+	quantityInFridge := aBatch isInFridge
+		                    ifTrue: [ aBatch quantity min: freeSpace ]
+		                    ifFalse: [ 0 ].
 	(aBatch isInFridge and: [ aBatch quantity > freeSpace ]) ifTrue: [
 			freeSpace > 0 ifTrue: [
 				inventory addBatch: (aBatch extractQuantity: freeSpace) ].
 			aBatch moveOutsideFridge ].
-	inventory addBatch: aBatch
+	inventory addBatch: aBatch.
+	^ quantityInFridge
 ]
 
 { #category : 'adding' }

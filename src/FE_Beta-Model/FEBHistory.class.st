@@ -9,8 +9,8 @@ I am the history of an entity of the model: one record per time step, in order.
 
 ## Collaborators:
 
-- `FEBHousehold`: keeps me, and asks me for the record of the current time step as it acts.
-- `FEBHouseholdDay`: the records I keep for a household. I only need them to answer their `step`.
+- `FEBHousehold` and `FEBOutlet`: keep me, and ask me for the record of the current time step as they act.
+- `FEBHouseholdDay` and `FEBOutletDay`: the records I keep. I only need them to answer their `step`.
 
 ## Public API and Key Messages
 
@@ -50,7 +50,7 @@ FEBHistory >> dayAt: aStep [
 	^ days detect: [ :each | each step = aStep ]
 ]
 
-{ #category : 'adding' }
+{ #category : 'accessing' }
 FEBHistory >> dayAt: aStep ifAbsentPut: aBlock [
 	"Answer the record of aStep, creating it with aBlock when there is none. Records are created as time goes forward, so a missing record comes after all the others."
 
