@@ -7,23 +7,23 @@ Class {
 
 { #category : 'tests' }
 FEBModelTest >> dummyModel [
+
 	<script: 'self new dummyModel openSpacePresenter'>
 	| model |
+	model := FEBModel new
+		         createGridNumberOfRows: 10
+		         numberOfColumns: 10
+		         neighbourhood: 8
+		         closed: true;
+		         yourself.
+	"Outlets set their prices for the model's food categories"
+	model initializeFoodCategories.
 
-	model := FEBModel new 
-		createGridNumberOfRows: 10
-		numberOfColumns: 10
-		neighbourhood: 8
-		closed: true;
-		yourself.
-		
 	model newEntity: FEBOutlet locatedAt: (model cellAt: 2 at: 3).
 	model newEntity: FEBOutlet locatedAt: (model cellAt: 9 at: 8).
 	model newEntity: FEBHousehold locatedAt: (model cellAt: 4 at: 2).
-	
+
 	^ model
-
-
 ]
 
 { #category : 'tests' }
