@@ -35,9 +35,10 @@ FEBFoodInventory >> batches [
 ]
 
 { #category : 'as yet unclassified' }
-FEBFoodInventory >> batchesExpiringSoon [
+FEBFoodInventory >> batchesExpiringTomorrow [
+	"Answer the batches in their last day: they will be expired tomorrow"
 
-	^ self nonExpiredBatches select: [ :each | each willExpireSoon ]
+	^ self nonExpiredBatches select: [ :each | each willExpireTomorrow ]
 ]
 
 { #category : 'as yet unclassified' }
@@ -96,13 +97,6 @@ FEBFoodInventory >> fridgeCapacity [
 FEBFoodInventory >> fridgeCapacity: anInteger [
 
 	fridgeCapacity := anInteger
-]
-
-{ #category : 'testing' }
-FEBFoodInventory >> hasBatchExpiringSoonOfCategory: aCategory [
-
-	^ (self batchesOfCategory: aCategory)
-		anySatisfy: [ :each | each willExpireSoon ]
 ]
 
 { #category : 'as yet unclassified' }

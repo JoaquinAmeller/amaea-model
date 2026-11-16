@@ -372,8 +372,7 @@ FEBHousehold >> eatFoodInItsLastDay [
 
 	| eatenCategories |
 	eatenCategories := OrderedCollection new.
-	((inventory nonExpiredBatches select: [ :each |
-		  each willExpireTomorrow ]) sorted: [ :a :b |
+	(inventory batchesExpiringTomorrow sorted: [ :a :b |
 			 (self preferenceRankOf: a category)
 			 <= (self preferenceRankOf: b category) ]) do: [ :batch |
 			eatenCategories addAll: (self

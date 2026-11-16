@@ -150,12 +150,6 @@ FEBFoodBatch >> remainingDays [
 ]
 
 { #category : 'as yet unclassified' }
-FEBFoodBatch >> willExpireSoon [
-
-	^ remainingDays <= 2
-]
-
-{ #category : 'as yet unclassified' }
 FEBFoodBatch >> willExpireTomorrow [
 
 	^ remainingDays = 1
