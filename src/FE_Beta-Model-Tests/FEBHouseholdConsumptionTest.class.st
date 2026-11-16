@@ -244,6 +244,18 @@ FEBHouseholdConsumptionTest >> testMealsAddUpToTheDailyNeedWhenSharesAreNotWhole
 ]
 
 { #category : 'tests' }
+FEBHouseholdConsumptionTest >> testNeverEatsSpoiledFood [
+
+	| meals |
+	self useSomeFuckAboutSpoil.
+	self add: 100 of: animalProteins expiringIn: 0.
+
+	meals := household consumeFood.
+
+	self assert: meals isEmpty
+]
+
+{ #category : 'tests' }
 FEBHouseholdConsumptionTest >> testNoSpoilWeirdoEatsEachCategoryInItsProportionWhenNothingIsInItsLastDay [
 
 	| meals |

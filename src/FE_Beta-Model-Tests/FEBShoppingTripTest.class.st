@@ -1,11 +1,11 @@
 "
-I test the shopping trips of a `FEBHousehold`: whether it goes shopping, where, and what it can afford.
+I test the shopping trips of a `FEBHousehold`, and its days of eating and shopping next to an outlet: whether it goes shopping, where, what it can afford, and whether it then eats as it should.
 
 ## Responsibility:
 
-- Check that a household shops when it lacks its preferred food for the day, and only then.
-- Check that it visits the closest outlet first and goes no further than its time allows.
-- Check that it never spends more than it has, and keeps a money reserve when buying for storage.
+- Check that a household shops when it lacks its preferred food for the day, buys exactly what it needs, today's food first, and never more than it can pay.
+- Check how it chooses outlets: closest first, on to the next when one runs out, never further than its time allows, with less time spent when it only stocks up.
+- Check that living next to a well-stocked outlet keeps it full, eating its preferred share of each food.
 
 ## Collaborators:
 
@@ -16,7 +16,8 @@ I test the shopping trips of a `FEBHousehold`: whether it goes shopping, where, 
 ## Public API and Key Messages
 
 - `outletAt:at:stocking:of:` puts an outlet on the grid with only that food, and tells the household about it.
-- `give:of:` puts food in the household's inventory.
+- `give:of:` puts food in the household's inventory, and `giveMoney:` sets its money per day.
+- `livePreferringStaplesFruitsAndProteinsFor:nextTo:` lives several days next to an outlet restocked every morning.
 
 ```smalltalk
 FEBShoppingTripTest run: #testShopsAtTheClosestOutletFirst
@@ -57,6 +58,32 @@ FEBShoppingTripTest >> giveMoney: anAmount [
 FEBShoppingTripTest >> inventoryOf: anOutlet [
 
 	^ anOutlet instVarNamed: #inventory
+]
+
+{ #category : 'helpers' }
+FEBShoppingTripTest >> livePreferringStaplesFruitsAndProteinsFor: aNumberOfDays nextTo: anOutlet [
+	"Live aNumberOfDays: each morning the outlet has plenty of every preferred food, and the household eats, shops and its food ages. Answer the meals of each day."
+
+	| fruitsAndVegetables |
+	fruitsAndVegetables := model foodCategoryNamed:
+		                       'Fruits and vegetables'.
+	household foodPreferenceProportions: {
+			(stapleFood -> 0.5).
+			(fruitsAndVegetables -> 0.3).
+			(animalProteins -> 0.2) } asDictionary.
+	household inventory batches removeAll.
+	aNumberOfDays timesRepeat: [
+			(self inventoryOf: anOutlet) batches removeAll.
+			{
+				stapleFood.
+				fruitsAndVegetables.
+				animalProteins } do: [ :each |
+					(self inventoryOf: anOutlet) addBatch: (FEBFoodBatch
+							 category: each
+							 quantity: 100
+							 fridge: each shouldBeStoredInFridge) ].
+			household step ].
+	^ household instVarNamed: #consumptionHistory
 ]
 
 { #category : 'helpers' }
@@ -104,6 +131,91 @@ FEBShoppingTripTest >> setUp [
 ]
 
 { #category : 'tests' }
+FEBShoppingTripTest >> testAMoneySaverSpendsLessMoneyOnStorageThanATimeSaver [
+
+	| timeSaverFood moneySaverFood |
+	self giveMoney: 100.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 1000
+		of: stapleFood.
+
+	household beTimeSaver.
+	self give: 10 of: stapleFood.
+	household goShopping.
+	timeSaverFood := household inventory totalQuantity.
+
+	household inventory batches removeAll.
+	household beMoneySaver.
+	self give: 10 of: stapleFood.
+	household goShopping.
+	moneySaverFood := household inventory totalQuantity.
+
+	self assert: moneySaverFood < timeSaverFood
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testATimeSaverSpendsLessTimeStockingUpThanAMoneySaver [
+	"The outlet is 60 minutes away and the household already has today's food"
+
+	| outlet |
+	self giveMoney: 1000.
+	outlet := self
+		          outletAt: 1
+		          at: 13
+		          stocking: 100
+		          of: stapleFood.
+
+	household beMoneySaver.
+	self give: 10 of: stapleFood.
+	household goShopping.
+	self assert: (self inventoryOf: outlet) totalQuantity < 100.
+
+	(self inventoryOf: outlet) batches removeAll.
+	(self inventoryOf: outlet) addBatch:
+		(FEBFoodBatch category: stapleFood quantity: 100 fridge: false).
+	household inventory batches removeAll.
+	household beTimeSaver.
+	self give: 10 of: stapleFood.
+	household goShopping.
+	self assert: (self inventoryOf: outlet) totalQuantity equals: 100
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testBuysExactlyWhatItNeedsWhenItCanAffordIt [
+	"10 meals for today and 5 days of storage"
+
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: stapleFood.
+
+	household goShopping.
+
+	self assert: household inventory totalQuantity equals: 60
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testBuysFoodForTodayBeforeFoodForStorage [
+	"60 pays for today's 10 meals and leaves 10, less than the reserve of a money saver"
+
+	self giveMoney: 60.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: stapleFood.
+
+	household goShopping.
+
+	self assert: household inventory totalQuantity equals: 10.
+	self assert: household remainingMoney equals: 10
+]
+
+{ #category : 'tests' }
 FEBShoppingTripTest >> testDoesNotGoFurtherThanItsTimeAllows [
 	"The outlet is 29 cells away, 145 minutes of walking, and the household has 2 hours"
 
@@ -140,6 +252,29 @@ FEBShoppingTripTest >> testFoodThatDoesNotFitInTheFridgeIsKeptOutside [
 		assert: (inventory quantityInCategory: animalProteins)
 		equals: 16.
 	self assert: inventory quantityInFridge equals: 6
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testGoesOnToTheNextOutletWhenTheClosestRunsOut [
+
+	| near next |
+	self giveMoney: 1000.
+	near := self
+		        outletAt: 1
+		        at: 3
+		        stocking: 4
+		        of: stapleFood.
+	next := self
+		        outletAt: 1
+		        at: 5
+		        stocking: 100
+		        of: stapleFood.
+
+	household goShopping.
+
+	self assert: (self inventoryOf: near) totalQuantity equals: 0.
+	self assert: (self inventoryOf: next) totalQuantity equals: 44.
+	self assert: household inventory totalQuantity equals: 60
 ]
 
 { #category : 'tests' }
@@ -194,6 +329,54 @@ FEBShoppingTripTest >> testNeverSpendsMoreThanItHas [
 
 	self assert: household remainingMoney >= 0.
 	self assert: household inventory totalQuantity * 5 <= 23
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testNextToAWellStockedOutletAHouseholdEatsItsPreferredShareOfEachFoodEveryDay [
+	"With the strategy that keeps to the preferences, rather than eating food in its last day first"
+
+	| days fruitsAndVegetables previousStrategy |
+	fruitsAndVegetables := model foodCategoryNamed:
+		                       'Fruits and vegetables'.
+	previousStrategy := FEBHousehold consumptionStrategySymbol.
+	FEBHousehold consumptionStrategySymbol: #'Some fuck about spoil'.
+	[
+		self giveMoney: 100.
+		days := self
+			        livePreferringStaplesFruitsAndProteinsFor: 10
+			        nextTo: (self
+					         outletAt: 1
+					         at: 3
+					         stocking: 1
+					         of: stapleFood) ] ensure: [
+		FEBHousehold consumptionStrategySymbol: previousStrategy ].
+
+	days allButFirst doWithIndex: [ :meals :day |
+			self
+				assert: {
+						(meals count: [ :each | each = stapleFood ]).
+						(meals count: [ :each | each = fruitsAndVegetables ]).
+						(meals count: [ :each | each = animalProteins ]) }
+				equals: #( 5 3 2 ) ]
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testNextToAWellStockedOutletAHouseholdIsFullEveryDayAfterTheFirst [
+	"It starts with no food, so the first day it cannot eat"
+
+	| days |
+	self giveMoney: 100.
+	days := self
+		        livePreferringStaplesFruitsAndProteinsFor: 10
+		        nextTo: (self
+				         outletAt: 1
+				         at: 3
+				         stocking: 1
+				         of: stapleFood).
+
+	self assert: days first isEmpty.
+	(days allButFirst collect: [ :each | each size ]) do: [ :meals |
+		self assert: meals equals: 10 ]
 ]
 
 { #category : 'tests' }
@@ -260,4 +443,89 @@ FEBShoppingTripTest >> testStaysHomeWhenItHasItsPreferredFoodForTheDay [
 	self give: 10 of: stapleFood.
 
 	self deny: household shouldGoShopping
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testStopsShoppingOnceItHasEverythingItNeeds [
+
+	| far |
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: stapleFood.
+	far := self
+		       outletAt: 1
+		       at: 6
+		       stocking: 100
+		       of: stapleFood.
+
+	household goShopping.
+
+	self assert: (self inventoryOf: far) totalQuantity equals: 100
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testUnspentMoneyIsNotSavedForTheNextDay [
+	"With no outlet in reach, the first day's money is not spent. The next day it still only has one day's money: 100, which pays for 20 meals"
+
+	self giveMoney: 100.
+	self
+		outletAt: 30
+		at: 30
+		stocking: 100
+		of: stapleFood.
+	household goShopping.
+
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: stapleFood.
+	household goShopping.
+
+	self assert: household inventory totalQuantity <= 20
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testWalkingTimeAddsUpFromOutletToOutlet [
+	"The first outlet is 60 minutes away and has little food. The second is 120 minutes from home, but another 120 from the first outlet, which is more than the 60 minutes left"
+
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 13
+		stocking: 4
+		of: stapleFood.
+	self
+		outletAt: 25
+		at: 1
+		stocking: 100
+		of: stapleFood.
+
+	household goShopping.
+
+	self assert: household inventory totalQuantity equals: 4
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testWalksFurtherForFoodForTodayThanForStorage [
+	"The outlet is 110 minutes away, within the 2 hours a household has, but further than it walks only to stock up, whatever share of its time its strategy keeps back"
+
+	| outlet |
+	self giveMoney: 1000.
+	outlet := self
+		          outletAt: 1
+		          at: 23
+		          stocking: 100
+		          of: stapleFood.
+
+	self give: 10 of: stapleFood.
+	household goShopping.
+	self assert: (self inventoryOf: outlet) totalQuantity equals: 100.
+
+	household inventory batches removeAll.
+	household goShopping.
+	self assert: (self inventoryOf: outlet) totalQuantity < 100
 ]
