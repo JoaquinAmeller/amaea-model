@@ -87,9 +87,9 @@ FEBHouseholdConsumptionTest >> initializeFoodCategories [
 ]
 
 { #category : 'helpers' }
-FEBHouseholdConsumptionTest >> mealsOf: aCategory in: aCollectionOfCategories [
+FEBHouseholdConsumptionTest >> mealsOf: aCategory in: aCollectionOfMeals [
 
-	^ aCollectionOfCategories count: [ :each | each = aCategory ]
+	^ aCollectionOfMeals count: [ :each | each category = aCategory ]
 ]
 
 { #category : 'helpers' }
@@ -216,6 +216,24 @@ FEBHouseholdConsumptionTest >> testEatsTheSoonestExpiringBatchOfACategoryFirst [
 ]
 
 { #category : 'tests' }
+FEBHouseholdConsumptionTest >> testFoodInItsLastDayEatenFirstIsRecordedAsSuch [
+
+	| meals |
+	self useNoSpoilWeirdo.
+	self addAbundantFoodExpiringIn: 5.
+	self add: 20 of: dairy expiringIn: 1.
+
+	meals := household consumeFood.
+
+	self
+		assert: (meals count: [ :each | each reason = #lastDay ])
+		equals: 20.
+	self
+		assert: (meals count: [ :each | each reason = #ownShare ])
+		equals: 30
+]
+
+{ #category : 'tests' }
 FEBHouseholdConsumptionTest >> testMealsAddUpToTheDailyNeedWhenSharesAreNotWhole [
 	"Shares of 10 meals: 3.5, 3, 1.5, 1.5 and 0.5. The two meals left after rounding down go to the most preferred of the categories with half a meal."
 
@@ -241,6 +259,51 @@ FEBHouseholdConsumptionTest >> testMealsAddUpToTheDailyNeedWhenSharesAreNotWhole
 			+ (self mealsOf: stapleFood in: meals)
 		equals: 3.
 	self assert: (self mealsOf: processedFood in: meals) equals: 0
+]
+
+{ #category : 'tests' }
+FEBHouseholdConsumptionTest >> testMealsEatenFromTheLeftoversAreRecordedAsSuch [
+	"As in testEatsTheLeftoversOfThePreferredCategoriesFirst: the 15 dairy meals come from the leftovers"
+
+	| meals |
+	self useSomeFuckAboutSpoil.
+	self add: 30 of: animalProteins expiringIn: 5.
+	self add: 30 of: fruitsAndVegetables expiringIn: 5.
+
+	meals := household consumeFood.
+
+	self
+		assert: (meals count: [ :each | each reason = #leftover ])
+		equals: 15.
+	self
+		assert: (meals count: [ :each | each reason = #ownShare ])
+		equals: 35
+]
+
+{ #category : 'tests' }
+FEBHouseholdConsumptionTest >> testMealsRecordWhetherTheyWereTheirOwnShareOrASubstitute [
+	"As in testSubstitutesMissingMealsAlongTheSubstitutionList: 5 dairy and 10 staple food are eaten in place of animal proteins"
+
+	| meals |
+	self useSomeFuckAboutSpoil.
+	self add: 10 of: animalProteins expiringIn: 5.
+	self add: 20 of: dairy expiringIn: 5.
+	self add: 100 of: fruitsAndVegetables expiringIn: 5.
+	self add: 100 of: stapleFood expiringIn: 5.
+
+	meals := household consumeFood.
+
+	self
+		assert: (meals count: [ :each | each reason = #ownShare ])
+		equals: 35.
+	self
+		assert: (meals count: [ :each |
+				 each reason = #substitute and: [ each category = dairy ] ])
+		equals: 5.
+	self
+		assert: (meals count: [ :each |
+				 each reason = #substitute and: [ each category = stapleFood ] ])
+		equals: 10
 ]
 
 { #category : 'tests' }

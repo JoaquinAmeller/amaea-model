@@ -16,7 +16,7 @@ Class {
 		'strategy',
 		'shoppingStrategy',
 		'dailyNeed',
-		'consumptionHistory'
+		'history'
 	],
 	#classInstVars : [
 		'minHouseholdSize',
@@ -272,38 +272,45 @@ FEBHousehold >> buyFoodBatches: batches for: moneySpent [
 { #category : 'accessing' }
 FEBHousehold >> caloricAdequacyColor [
 
-	consumptionHistory ifEmpty: [ ^ CMColor gray ].
+	history isEmpty ifTrue: [ ^ CMColor gray ].
 
-	self isCaloricSeverelyInadequate ifTrue: [ ^ Color fromHexString: 'B85353' ]. "red"
+	self isCaloricSeverelyInadequate ifTrue: [
+		^ Color fromHexString: 'B85353' ]. "red"
 	self isCaloricInadequate ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
 	self isCaloricAdequate ifTrue: [ ^ Color fromHexString: '78A882' ]. "green"
-	self isCaloricExcess ifTrue: [ ^ Color fromHexString: '9274B5' ]. "purple"
+	self isCaloricExcess ifTrue: [ ^ Color fromHexString: '9274B5' ] "purple"
 ]
 
 { #category : 'testing' }
 FEBHousehold >> caloricAdequacyScore [
+	"The caloric adequacy of the latest recorded day. A household that has not eaten yet counts as adequate."
 
-	| totalKilocaloriesConsumed |
-	consumptionHistory ifEmpty: [ ^ 1 ].
-	
-	totalKilocaloriesConsumed := consumptionHistory last sum: [ :foodCategory | foodCategory kilocaloriesPerPortion ].
-	^ totalKilocaloriesConsumed / (2000 * self householdSize)
+	history isEmpty ifTrue: [ ^ 1 ].
+	^ self caloricAdequacyScoreOn: history lastDay
+]
+
+{ #category : 'testing' }
+FEBHousehold >> caloricAdequacyScoreOn: aDay [
+	"The kilocalories eaten that day, against 2000 per person"
+
+	^ (aDay meals sum: [ :each | each category kilocaloriesPerPortion ])
+	  / (2000 * householdSize)
 ]
 
 { #category : 'consuming' }
 FEBHousehold >> consumeFood [
+	"Eat today's meals, record them in today's record and answer them"
 
 	<action>
-	| eatenCategories |
-	eatenCategories := self class consumptionStrategy mealsEatenFirstBy: self.
-	eatenCategories addAll:
-		(self eatMealsByPreference: dailyNeed - eatenCategories size).
+	| meals |
+	meals := self class consumptionStrategy mealsEatenFirstBy: self.
+	meals addAll: (self eatMealsByPreference: dailyNeed - meals size).
 
-	consumptionHistory add: eatenCategories.
+	self today addMeals: meals.
 
-	self updateHungerMemoryAfterEating: eatenCategories.
+	self updateHungerMemoryAfterEating: meals.
 
-	^ eatenCategories
+	^ meals
 ]
 
 { #category : 'accessing' }
@@ -313,50 +320,51 @@ FEBHousehold >> dailyNeed [
 ]
 
 { #category : 'consuming' }
-FEBHousehold >> eat: aNumberOfMeals mealsFromBatch: aBatch [
+FEBHousehold >> eat: aNumberOfMeals mealsFromBatch: aBatch as: aReason [
 
 	^ (1 to: aNumberOfMeals) asOrderedCollection collect: [ :each |
 			  inventory extractOneUnitFromBatch: aBatch.
-			  aBatch category ]
+			  FEBMeal category: aBatch category reason: aReason ]
 ]
 
 { #category : 'consuming' }
-FEBHousehold >> eat: aNumberOfMeals mealsOf: aCategory [
-	"Eat up to aNumberOfMeals of aCategory, soonest-expiring batches first. Answer the categories of the meals eaten."
+FEBHousehold >> eat: aNumberOfMeals mealsOf: aCategory as: aReason [
+	"Eat up to aNumberOfMeals of aCategory, soonest-expiring batches first. Answer the meals eaten."
 
-	| eatenCategories |
-	eatenCategories := OrderedCollection new.
+	| meals |
+	meals := OrderedCollection new.
 	((inventory batchesOfCategory: aCategory) sorted: [ :a :b |
 		 a remainingDays <= b remainingDays ]) do: [ :batch |
-			eatenCategories addAll: (self
-					 eat: (aNumberOfMeals - eatenCategories size min: batch quantity)
-					 mealsFromBatch: batch) ].
-	^ eatenCategories
+			meals addAll: (self
+					 eat: (aNumberOfMeals - meals size min: batch quantity)
+					 mealsFromBatch: batch
+					 as: aReason) ].
+	^ meals
 ]
 
 { #category : 'consuming' }
 FEBHousehold >> eat: aNumberOfMeals substitutesFor: aCategory [
-	"Eat up to aNumberOfMeals in place of aCategory, following substitutionList from one substitute to the next until enough is eaten or the list ends. Answer the categories of the meals eaten."
+	"Eat up to aNumberOfMeals in place of aCategory, following substitutionList from one substitute to the next until enough is eaten or the list ends. Answer the meals eaten."
 
-	| eatenCategories substitute |
-	eatenCategories := OrderedCollection new.
+	| meals substitute |
+	meals := OrderedCollection new.
 	substitute := substitutionList at: aCategory ifAbsent: [ nil ].
-	[ substitute isNotNil and: [ eatenCategories size < aNumberOfMeals ] ]
+	[ substitute isNotNil and: [ meals size < aNumberOfMeals ] ]
 		whileTrue: [
-				eatenCategories addAll:
-					(self
-						 eat: aNumberOfMeals - eatenCategories size
-						 mealsOf: substitute).
+				meals addAll: (self
+						 eat: aNumberOfMeals - meals size
+						 mealsOf: substitute
+						 as: #substitute).
 				substitute := substitutionList at: substitute ifAbsent: [ nil ] ].
-	^ eatenCategories
+	^ meals
 ]
 
 { #category : 'consuming' }
 FEBHousehold >> eatAnyFood: aNumberOfMeals [
-	"Eat up to aNumberOfMeals of whatever food is left, preferred categories first. Answer the categories of the meals eaten."
+	"Eat up to aNumberOfMeals of whatever food is left, preferred categories first. Answer the meals eaten."
 
-	| eatenCategories categories |
-	eatenCategories := OrderedCollection new.
+	| meals categories |
+	meals := OrderedCollection new.
 	"Categories in the order of the inventory, so that categories with the same rank keep the same order from one run to the next"
 	categories := (inventory nonExpiredBatches collect: [ :each |
 			               each category ]) asOrderedCollection
@@ -365,47 +373,50 @@ FEBHousehold >> eatAnyFood: aNumberOfMeals [
 	(categories sorted: [ :a :b |
 		 (self preferenceRankOf: a) <= (self preferenceRankOf: b) ]) do: [
 			:category |
-			eatenCategories addAll:
-				(self eat: aNumberOfMeals - eatenCategories size mealsOf: category) ].
-	^ eatenCategories
+			meals addAll:
+				(self
+					 eat: aNumberOfMeals - meals size
+					 mealsOf: category
+					 as: #leftover) ].
+	^ meals
 ]
 
 { #category : 'consuming' }
 FEBHousehold >> eatFoodInItsLastDay [
-	"Eat the food that will be expired tomorrow, up to the daily need, preferred categories first. Answer the categories of the meals eaten."
+	"Eat the food that will be expired tomorrow, up to the daily need, preferred categories first. Answer the meals eaten."
 
-	| eatenCategories |
-	eatenCategories := OrderedCollection new.
+	| meals |
+	meals := OrderedCollection new.
 	(inventory batchesExpiringTomorrow sorted: [ :a :b |
 			 (self preferenceRankOf: a category)
 			 <= (self preferenceRankOf: b category) ]) do: [ :batch |
-			eatenCategories addAll: (self
-					 eat: (dailyNeed - eatenCategories size min: batch quantity)
-					 mealsFromBatch: batch) ].
-	^ eatenCategories
+			meals addAll: (self
+					 eat: (dailyNeed - meals size min: batch quantity)
+					 mealsFromBatch: batch
+					 as: #lastDay) ].
+	^ meals
 ]
 
 { #category : 'consuming' }
 FEBHousehold >> eatMealsByPreference: aNumberOfMeals [
-	"Eat aNumberOfMeals split by foodPreferenceProportions. Every category eats its own share first. Then the meals a category could not eat go along substitutionList, to whatever food is left. Meals still missing come from any food left, so the household only eats less when it runs out of food. Answer the categories of the meals eaten."
+	"Eat aNumberOfMeals split by foodPreferenceProportions. Every category eats its own share first. Then the meals a category could not eat go along substitutionList, to whatever food is left. Meals still missing come from any food left, so the household only eats less when it runs out of food. Answer the meals eaten."
 
-	| eatenCategories missingMeals |
-	eatenCategories := OrderedCollection new.
+	| meals missingMeals |
+	meals := OrderedCollection new.
 	missingMeals := OrderedDictionary new.
 	(self mealsPerCategoryFor: aNumberOfMeals) keysAndValuesDo: [
 			:category
-			:meals |
+			:share |
 			| ownMeals |
-			ownMeals := self eat: meals mealsOf: category.
-			eatenCategories addAll: ownMeals.
-			missingMeals at: category put: meals - ownMeals size ].
+			ownMeals := self eat: share mealsOf: category as: #ownShare.
+			meals addAll: ownMeals.
+			missingMeals at: category put: share - ownMeals size ].
 
-	missingMeals keysAndValuesDo: [ :category :meals |
-		eatenCategories addAll: (self eat: meals substitutesFor: category) ].
+	missingMeals keysAndValuesDo: [ :category :missing |
+		meals addAll: (self eat: missing substitutesFor: category) ].
 
-	eatenCategories addAll:
-		(self eatAnyFood: aNumberOfMeals - eatenCategories size).
-	^ eatenCategories
+	meals addAll: (self eatAnyFood: aNumberOfMeals - meals size).
+	^ meals
 ]
 
 { #category : 'adding' }
@@ -461,6 +472,12 @@ FEBHousehold >> hasPreferredFoodForOneDay [
 		  (inventory quantityLeftTomorrowInCategory: each key) >= each value ]
 ]
 
+{ #category : 'history' }
+FEBHousehold >> history [
+
+	^ history
+]
+
 { #category : 'accessing' }
 FEBHousehold >> householdSize [
 
@@ -471,34 +488,32 @@ FEBHousehold >> householdSize [
 FEBHousehold >> initialize [
 
 	super initialize.
-	
+
 	householdSize := self
-		randomIntegerBetween: self class minHouseholdSize
-			and: self class maxHouseholdSize.
-	
+		                 randomIntegerBetween: self class minHouseholdSize
+		                 and: self class maxHouseholdSize.
+
 	foodPreferenceProportions := OrderedDictionary new.
-		
+
 	satisfactionMemory := 2.
 	hungerMemory := 0.
-	
+
 	"10 meals times the number of persons in the household"
-	dailyNeed := 10 * householdSize. 
-	
+	dailyNeed := 10 * householdSize.
+
 	"available for getting food"
 	availableMoneyPerStep := self class availableMoneyPerStep.
 	availableTimePerStep := self class availableTimePerStep hours.
-	
+
 	"We need to do this to make sure that everyone is satisfied at init -> for the probe to work"
 	self resetRemainingTimeAndMoney.
-	
+
 	"by default households prefers to save money just to avoid it to be nil.
 	Init in the model will assign the proportions of preferences"
 	self beMoneySaver.
-	
+
 	shoppingStrategy := FEBSimpleShoppingStrategy new.
-	consumptionHistory := OrderedCollection new
-	
-	
+	history := FEBHistory new
 ]
 
 { #category : 'initialization' }
@@ -553,22 +568,28 @@ FEBHousehold >> isFull [
 
 { #category : 'testing' }
 FEBHousehold >> isHavingHealthyDiet [
-	"Average consumption of at least one unit each of fruits & vegetables, meat, and staple food per day over the last 7 days"
-	
-	| numberOfDays foodConsumedInSevenDays foodNames allFoodCategoryNames |
-	
-	numberOfDays := 7 min: consumptionHistory size.
-	
-	foodConsumedInSevenDays := (consumptionHistory last: numberOfDays) flatCollect: [ :each | each ].
-	
-	foodNames := foodConsumedInSevenDays collect: [ :category | category name ].
-	
+
+	history isEmpty ifTrue: [ ^ false ].
+	^ self isHavingHealthyDietOn: history lastDay
+]
+
+{ #category : 'testing' }
+FEBHousehold >> isHavingHealthyDietOn: aDay [
+	"Average consumption of at least one unit each of fruits & vegetables, meat, and staple food per day over the 7 days up to aDay"
+
+	| week foodNames allFoodCategoryNames |
+	week := (history daysUpTo: aDay) last:
+		        (7 min: (history daysUpTo: aDay) size).
+
+	foodNames := week flatCollect: [ :day |
+		             day meals collect: [ :each | each category name ] ].
+
 	"DANGER! This relies on foodPreferenceProportions to contain ALL the categories and not just some of them"
-	allFoodCategoryNames := (foodPreferenceProportions keys collect: [ :category | category name ]) asSet.
-	
-	^ allFoodCategoryNames allSatisfy: [ :name | 
-		(foodNames count: [ :each | each = name ]) >= 7 ].
-	
+	allFoodCategoryNames := (foodPreferenceProportions keys collect: [
+		                         :category | category name ]) asSet.
+
+	^ allFoodCategoryNames allSatisfy: [ :name |
+		  (foodNames count: [ :each | each = name ]) >= 7 ]
 ]
 
 { #category : 'testing' }
@@ -712,21 +733,28 @@ FEBHousehold >> preferenceRankOf: aCategory [
 { #category : 'accessing' }
 FEBHousehold >> proteinAdequacyColor [
 
-	consumptionHistory ifEmpty: [ ^ CMColor gray ].
+	history isEmpty ifTrue: [ ^ CMColor gray ].
 
-	self isProteinSeverelyInadequate ifTrue: [ ^ Color fromHexString: 'B85353' ]. "red"
+	self isProteinSeverelyInadequate ifTrue: [
+		^ Color fromHexString: 'B85353' ]. "red"
 	self isProteinInadequate ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
-	self isProteinAdequate ifTrue: [ ^ Color fromHexString: '78A882' ]. "green"
+	self isProteinAdequate ifTrue: [ ^ Color fromHexString: '78A882' ] "green"
 ]
 
 { #category : 'testing' }
 FEBHousehold >> proteinAdequacyScore [
+	"The protein adequacy of the latest recorded day. A household that has not eaten yet counts as adequate."
 
-	| totalProteinsConsumed |
-	consumptionHistory ifEmpty: [ ^ 1 ].
-	
-	totalProteinsConsumed := consumptionHistory last sum: [ :foodCategory | foodCategory proteinsPerPortion ].
-	^ totalProteinsConsumed / (60 * self householdSize)
+	history isEmpty ifTrue: [ ^ 1 ].
+	^ self proteinAdequacyScoreOn: history lastDay
+]
+
+{ #category : 'testing' }
+FEBHousehold >> proteinAdequacyScoreOn: aDay [
+	"The grams of protein eaten that day, against 60 per person"
+
+	^ (aDay meals sum: [ :each | each category proteinsPerPortion ])
+	  / (60 * householdSize)
 ]
 
 { #category : 'accessing' }
@@ -763,17 +791,25 @@ FEBHousehold >> resetRemainingTimeAndMoney [
 { #category : 'accessing' }
 FEBHousehold >> satietyIndicatorColor [
 
-	consumptionHistory ifEmpty: [ ^ CMColor gray ].
+	history isEmpty ifTrue: [ ^ CMColor gray ].
 
 	self isHungry ifTrue: [ ^ Color fromHexString: 'B85353' ]. "red"
 	self isUnsatiated ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
-	self isFull ifTrue: [ ^ Color fromHexString: '78A882' ]. "green"
+	self isFull ifTrue: [ ^ Color fromHexString: '78A882' ] "green"
 ]
 
 { #category : 'testing' }
 FEBHousehold >> satietyScore [
-	consumptionHistory ifEmpty: [ ^ 1 ].
-	^ consumptionHistory last size / dailyNeed 
+	"The satiety of the latest recorded day. A household that has not eaten yet counts as full."
+
+	history isEmpty ifTrue: [ ^ 1 ].
+	^ self satietyScoreOn: history lastDay
+]
+
+{ #category : 'testing' }
+FEBHousehold >> satietyScoreOn: aDay [
+
+	^ aDay meals size / dailyNeed
 ]
 
 { #category : 'accessing' }
@@ -874,6 +910,15 @@ FEBHousehold >> substitutionList: aDictionary [
 FEBHousehold >> timeThreshold [
 
 	^ strategy timeThreshold
+]
+
+{ #category : 'history' }
+FEBHousehold >> today [
+	"Answer the record of the current time step, where everything the household does now is recorded"
+
+	^ history
+		  dayAt: self currentTimeStep
+		  ifAbsentPut: [ FEBHouseholdDay step: self currentTimeStep ]
 ]
 
 { #category : 'accessing' }

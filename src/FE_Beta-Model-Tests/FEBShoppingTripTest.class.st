@@ -80,7 +80,7 @@ FEBShoppingTripTest >> inventoryOf: anOutlet [
 
 { #category : 'helpers' }
 FEBShoppingTripTest >> livePreferringStaplesFruitsAndProteinsFor: aNumberOfDays nextTo: anOutlet [
-	"Live aNumberOfDays: each morning the outlet has plenty of every preferred food, and the household eats, shops and its food ages. Answer the meals of each day."
+	"Live aNumberOfDays, one time step each: each morning the outlet has plenty of every preferred food, and the household eats, shops and its food ages. Answer the food categories eaten each day."
 
 	| fruitsAndVegetables |
 	fruitsAndVegetables := model foodCategoryNamed:
@@ -90,7 +90,8 @@ FEBShoppingTripTest >> livePreferringStaplesFruitsAndProteinsFor: aNumberOfDays 
 			(fruitsAndVegetables -> 0.3).
 			(animalProteins -> 0.2) } asDictionary.
 	household inventory batches removeAll.
-	aNumberOfDays timesRepeat: [
+	1 to: aNumberOfDays do: [ :day |
+			model simulationContext currentTimeStep: day.
 			(self inventoryOf: anOutlet) batches removeAll.
 			{
 				stapleFood.
@@ -101,7 +102,8 @@ FEBShoppingTripTest >> livePreferringStaplesFruitsAndProteinsFor: aNumberOfDays 
 							 quantity: 100
 							 fridge: each shouldBeStoredInFridge) ].
 			household step ].
-	^ household instVarNamed: #consumptionHistory
+	^ household history days collect: [ :each |
+		  each meals collect: [ :meal | meal category ] ]
 ]
 
 { #category : 'helpers' }

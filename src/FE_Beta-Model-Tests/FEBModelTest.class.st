@@ -48,8 +48,8 @@ FEBModelTest >> mealsEatenInFiveStepsWithSeed: aNumber [
 		              yourself.
 	5 timesRepeat: [ simulation runStep ].
 	^ simulation cormasModel households asArray collect: [ :each |
-			  (each instVarNamed: #consumptionHistory) asArray collect: [
-				  :meals | (meals collect: [ :category | category name ]) asArray ] ]
+			  each history days asArray collect: [ :day |
+				  (day meals asArray collect: [ :meal | meal category name ]) sort ] ]
 ]
 
 { #category : 'tests' }
@@ -174,10 +174,11 @@ FEBModelTest >> testFoodSoldByOutletsIsTheFoodBoughtByHouseholds [
 	outletStock := stockOf value: outletInventories.
 	outletTrash := trashOf value: outletInventories.
 
+	model simulationContext currentTimeStep: 1.
 	model step.
 
 	eaten := model households sum: [ :each |
-		         (each instVarNamed: #consumptionHistory) last size ].
+		         (each history dayAt: 1) meals size ].
 	soldByOutlets := outletStock + model supply
 	                 - ((trashOf value: outletInventories) - outletTrash)
 	                 - (stockOf value: outletInventories).

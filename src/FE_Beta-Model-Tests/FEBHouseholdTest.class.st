@@ -15,8 +15,10 @@ Class {
 
 { #category : 'helpers' }
 FEBHouseholdTest >> eat: anArrayOfAssociations [
-	"Give the household exactly this food, category -> quantity, and let it eat"
+	"On the next time step, give the household exactly this food, category -> quantity, and let it eat"
 
+	household cormasModel simulationContext currentTimeStep:
+		household currentTimeStep + 1.
 	self emptyTheInventory.
 	anArrayOfAssociations do: [ :each |
 			each value > 0 ifTrue: [
