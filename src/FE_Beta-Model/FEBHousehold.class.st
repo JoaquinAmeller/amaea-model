@@ -607,14 +607,6 @@ FEBHousehold >> isUnsatiated [
 ^ (self satietyScore < 1) and: [self satietyScore > 0.8 ]
 ]
 
-{ #category : 'accessing' }
-FEBHousehold >> maximumDesiredQuantityOf: aFoodCategory [
-
-	^ aFoodCategory shouldBeStoredInFridge
-		ifTrue: [ 1 + inventory freeFridgeSpace ]
-		ifFalse: [ 10 "magic number" ]
-]
-
 { #category : 'consuming' }
 FEBHousehold >> mealsPerCategoryFor: aNumberOfMeals [
 	"Split aNumberOfMeals into whole meals per category, in the proportions of foodPreferenceProportions. The largest remainder method makes the meals add up to aNumberOfMeals, and a tie goes to the preferred category."
