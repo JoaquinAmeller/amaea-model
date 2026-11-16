@@ -5,15 +5,44 @@ Class {
 		'household',
 		'animalProteins',
 		'fruitsAndVegetables',
-		'stapleFood'
+		'stapleFood',
+		'processedFood'
 	],
 	#category : 'FE_Beta-Model-Tests',
 	#package : 'FE_Beta-Model-Tests'
 }
 
+{ #category : 'helpers' }
+FEBHouseholdTest >> eat: anArrayOfAssociations [
+	"Give the household exactly this food, category -> quantity, and let it eat"
+
+	self emptyTheInventory.
+	anArrayOfAssociations do: [ :each |
+			each value > 0 ifTrue: [
+					household inventory addBatch:
+						(FEBFoodBatch
+							 category: each key
+							 quantity: each value
+							 fridge: false) ] ].
+	household consumeFood
+]
+
+{ #category : 'helpers' }
+FEBHouseholdTest >> eat: aQuantity of: aCategory [
+	"Give the household exactly this food and let it eat"
+
+	self eat: { (aCategory -> aQuantity) }
+]
+
+{ #category : 'helpers' }
+FEBHouseholdTest >> emptyTheInventory [
+
+	household inventory batches removeAll
+]
+
 { #category : 'running' }
 FEBHouseholdTest >> setUp [
-	"A household needing 10 meals a day, with an empty inventory and the model's substitution list"
+	"A household of one person needing 10 meals a day, with an empty inventory and the model's substitution list"
 
 	| model |
 	super setUp.
@@ -23,16 +52,115 @@ FEBHouseholdTest >> setUp [
 	fruitsAndVegetables := model foodCategoryNamed:
 		                       'Fruits and vegetables'.
 	stapleFood := model foodCategoryNamed: 'Staple food'.
+	processedFood := model foodCategoryNamed: 'Processed food'.
 
 	household := model newEntity: FEBHousehold.
+	household instVarNamed: #householdSize put: 1.
 	household instVarNamed: #dailyNeed put: 10.
 	household foodPreferenceProportions: {
 			(stapleFood -> 0.5).
 			(fruitsAndVegetables -> 0.3).
 			(animalProteins -> 0.2) } asDictionary.
 	model initializeSubstitutionList.
-	household inventory batches copy do: [ :each |
-		household inventory removeBatch: each ]
+	self emptyTheInventory
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testAFullHouseholdIsNotHungryTheNextDayIfItHasFood [
+
+	self eat: 10 of: stapleFood.
+	self assert: household isFull.
+
+	self eat: 3 of: stapleFood.
+	self assert: household isHungry.
+
+	self eat: 10 of: stapleFood.
+	self assert: household isFull
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testAWeekOfEatingEveryPreferredFoodIsAHealthyDiet [
+
+	7 timesRepeat: [
+			self eat: {
+					(stapleFood -> 5).
+					(fruitsAndVegetables -> 3).
+					(animalProteins -> 2) } ].
+
+	self assert: household isHavingHealthyDiet
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testAWeekWithoutFruitsAndVegetablesIsNotAHealthyDiet [
+
+	7 timesRepeat: [
+			self eat: {
+					(stapleFood -> 8).
+					(animalProteins -> 2) } ].
+
+	self deny: household isHavingHealthyDiet
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testAboutSixtyGramsOfProteinAPersonIsAdequate [
+	"2 meals of animal proteins are 74 grams of protein"
+
+	self eat: 2 of: animalProteins.
+
+	self assert: household isProteinAdequate
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testAboutTwoThousandKilocaloriesAPersonIsAdequate [
+	"8 meals of staple food are 2080 kilocalories"
+
+	self eat: 8 of: stapleFood.
+
+	self assert: household isCaloricAdequate
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testEveryHouseholdHasExactlyOneCaloricAdequacyLevel [
+
+	0 to: 10 do: [ :meals |
+			self eat: meals of: processedFood.
+			self
+				assert: (self trueIn: {
+							 household isCaloricSeverelyInadequate.
+							 household isCaloricInadequate.
+							 household isCaloricAdequate.
+							 household isCaloricExcess }) = 1
+				description: meals printString
+					, ' meals of processed food give no single caloric level' ]
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testEveryHouseholdHasExactlyOneProteinAdequacyLevel [
+
+	0 to: 10 do: [ :meals |
+			self eat: meals of: animalProteins.
+			self
+				assert: (self trueIn: {
+							 household isProteinSeverelyInadequate.
+							 household isProteinInadequate.
+							 household isProteinAdequate }) = 1
+				description: meals printString
+					, ' meals of animal proteins give no single protein level' ]
+]
+
+{ #category : 'tests' }
+FEBHouseholdTest >> testEveryHouseholdIsEitherHungryUnsatiatedOrFull [
+
+	0 to: 10 do: [ :meals |
+			self eat: meals of: stapleFood.
+			self
+				assert: (self trueIn: {
+							 household isHungry.
+							 household isUnsatiated.
+							 household isFull }) = 1
+				description:
+				meals printString
+				, ' meals out of 10 give no single satiety level' ]
 ]
 
 { #category : 'tests' }
@@ -89,4 +217,10 @@ FEBHouseholdTest >> testShoppingListWhenSomeFood [
 		assert: (shoppingList storageNeedOf: fruitsAndVegetables)
 		equals: 15.
 	self assert: (shoppingList storageNeedOf: animalProteins) equals: 6
+]
+
+{ #category : 'helpers' }
+FEBHouseholdTest >> trueIn: aCollectionOfBooleans [
+
+	^ aCollectionOfBooleans count: [ :each | each ]
 ]
