@@ -105,22 +105,22 @@ FEBOutlet >> pricePerUnitFor: aCategory [
 FEBOutlet >> restock [
 
 	| categories category batch |
-	categories := prices keys.
-	
+	"The model's categories, in their fixed order, so that a random seed always picks the same ones"
+	categories := cormasModel foodCategories.
+
 	self flag: 'TODO'.
-	
-	10 timesRepeat: [ 
-		"Choose random category.
+
+	10 timesRepeat: [ "Choose random category.
 		Get random quantity of food of that category.
 		Assume infinite fridge capacity"
-		category := self selectRandomlyFrom: categories.
-		
-		batch := FEBFoodBatch
-			category: category
-			quantity: self restockAmount / 10
-			fridge: category shouldBeStoredInFridge.
-			
-		inventory addBatch: batch ]
+			category := self selectRandomlyFrom: categories.
+
+			batch := FEBFoodBatch
+				         category: category
+				         quantity: self restockAmount / 10
+				         fridge: category shouldBeStoredInFridge.
+
+			inventory addBatch: batch ]
 ]
 
 { #category : 'accessing' }

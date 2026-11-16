@@ -355,10 +355,14 @@ FEBHousehold >> eat: aNumberOfMeals substitutesFor: aCategory [
 FEBHousehold >> eatAnyFood: aNumberOfMeals [
 	"Eat up to aNumberOfMeals of whatever food is left, preferred categories first. Answer the categories of the meals eaten."
 
-	| eatenCategories |
+	| eatenCategories categories |
 	eatenCategories := OrderedCollection new.
-	((inventory nonExpiredBatches collect: [ :each | each category ])
-		 asSet asArray sort: [ :a :b |
+	"Categories in the order of the inventory, so that categories with the same rank keep the same order from one run to the next"
+	categories := (inventory nonExpiredBatches collect: [ :each |
+			               each category ]) asOrderedCollection
+		              removeDuplicates;
+		              yourself.
+	(categories sorted: [ :a :b |
 		 (self preferenceRankOf: a) <= (self preferenceRankOf: b) ]) do: [
 			:category |
 			eatenCategories addAll:
@@ -420,13 +424,16 @@ FEBHousehold >> findNonPerishableSubstitutionFor: aCategory [
 FEBHousehold >> foodPreferenceProportions: aDictionary [
 
 	| orderedDict |
-	orderedDict := (aDictionary associations sorted: [ :a :b | a value > b value ]) asOrderedDictionary.
+	"Most preferred first. Equal preferences are ordered by name, so that they keep the same order from one run to the next"
+	orderedDict := (aDictionary associations sorted: [ :a :b |
+			                a value > b value or: [
+				                a value = b value and: [ a key name <= b key name ] ] ])
+		               asOrderedDictionary.
 
 	foodPreferenceProportions := orderedDict.
-	
+
 	"Inventory is initialized when foodPreference is set because it needs to have food for one day, and we must specify the category of that food"
-	self initializeInventory. 
-	
+	self initializeInventory
 ]
 
 { #category : 'asserting' }
@@ -825,29 +832,36 @@ FEBHousehold >> store: aBatch [
 FEBHousehold >> substitutePerishableFoodThatWontFitInFridge: aShoppingList [
 
 	| perishableCategories totalQuantityOfPerishable totalQuantityToSubstitute quantityToSubstitute otherCategory |
-	
-	perishableCategories := aShoppingList storageNeeds keys select: [ :category |
-		category shouldBeStoredInFridge ].
-	
+	perishableCategories := aShoppingList storageNeeds keys select: [
+		                        :category | category shouldBeStoredInFridge ].
+
 	totalQuantityOfPerishable := perishableCategories sum: [ :category |
-		aShoppingList storageNeedOf: category ].
-	
-	totalQuantityToSubstitute := (totalQuantityOfPerishable - inventory freeFridgeSpace) max: 0.
-	
-	"We sort them to make sure that we will be substituting the leass wanted categories first"
-	perishableCategories asOrderedCollection sort: [ :a :b |
-		(foodPreferenceProportions at: a) < (foodPreferenceProportions at: b) ].
-	
+		                             aShoppingList storageNeedOf: category ].
+
+	totalQuantityToSubstitute := totalQuantityOfPerishable
+	                             - inventory freeFridgeSpace max: 0.
+
+	"We sort them to make sure that we will be substituting the least wanted categories first"
+	perishableCategories := perishableCategories sorted: [ :a :b |
+		                        (foodPreferenceProportions at: a)
+		                        < (foodPreferenceProportions at: b) ].
+
 	perishableCategories do: [ :category |
-		totalQuantityToSubstitute <= 0 ifTrue: [ ^ self ].
-		
-		quantityToSubstitute := totalQuantityToSubstitute min: (aShoppingList storageNeedOf: category).
-		otherCategory := self findNonPerishableSubstitutionFor: category.
-		
-		aShoppingList decreaseStorageNeedOf: category by: quantityToSubstitute.
-		aShoppingList addStorageNeedOf: otherCategory quantity: quantityToSubstitute.
-		
-		totalQuantityToSubstitute := totalQuantityToSubstitute - quantityToSubstitute ]
+			totalQuantityToSubstitute <= 0 ifTrue: [ ^ self ].
+
+			quantityToSubstitute := totalQuantityToSubstitute min:
+				                        (aShoppingList storageNeedOf: category).
+			otherCategory := self findNonPerishableSubstitutionFor: category.
+
+			aShoppingList
+				decreaseStorageNeedOf: category
+				by: quantityToSubstitute.
+			aShoppingList
+				addStorageNeedOf: otherCategory
+				quantity: quantityToSubstitute.
+
+			totalQuantityToSubstitute := totalQuantityToSubstitute
+			                             - quantityToSubstitute ]
 ]
 
 { #category : 'accessing' }

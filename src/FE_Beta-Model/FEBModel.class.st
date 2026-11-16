@@ -34,21 +34,31 @@ FEBModel >> amountOfSpoiledFoodInHouseholds [
 FEBModel >> averageCaloricAdequacyScore [
 
 	<probeNamed: 'Average caloric adequacy score' color: #gold>
-	^ (self households collect: #caloricAdequacyScore) average asFloat
+	^ self averageOverHouseholds: [ :each | each caloricAdequacyScore ]
+]
+
+{ #category : 'probes' }
+FEBModel >> averageOverHouseholds: aBlock [
+	"Answer the average of aBlock over the households, or 0 when there are none"
+
+	^ self households
+		  ifEmpty: [ 0 ]
+		  ifNotEmpty: [ :households |
+		  (households collect: aBlock) average asFloat ]
 ]
 
 { #category : 'probes' }
 FEBModel >> averageProteinAdequacyScore [
 
 	<probeNamed: 'Average protein adequacy score' color: #blue>
-	^ (self households collect: #proteinAdequacyScore) average asFloat
+	^ self averageOverHouseholds: [ :each | each proteinAdequacyScore ]
 ]
 
 { #category : 'probes' }
 FEBModel >> averageSatietyScore [
 
 	<probeNamed: 'Average satiety score' color: #green>
-	^ (self households collect: #satietyScore) average asFloat
+	^ self averageOverHouseholds: [ :each | each satietyScore ]
 ]
 
 { #category : 'probes' }
@@ -246,7 +256,7 @@ FEBModel >> initializeStrategies [
 
 	| proportion shuffledAgents numberOfMoneySavers |
 	"Shuffle the agents, so that the first part of them is a random selection of the given proportion, and the rest is the other part"
-	shuffledAgents := self agents asOrderedCollection shuffle.
+	shuffledAgents := self shuffled: self agents.
 
 	proportion := 0.5.
 	numberOfMoneySavers := (proportion * shuffledAgents size) asInteger.
@@ -462,8 +472,8 @@ FEBModel >> perspectiveSatietyAndOutletImages [
 FEBModel >> step [
 
 	<control>
-	(self @@ FEBHousehold) shuffled do: #step.
-	(self @@ FEBOutlet) shuffled do: #step.
+	(self shuffled: self @@ FEBHousehold) do: #step.
+	(self shuffled: self @@ FEBOutlet) do: #step
 ]
 
 { #category : 'probes' }

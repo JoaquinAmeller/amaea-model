@@ -125,16 +125,18 @@ FEBFoodBatch >> moveToFridge: aBoolean [
 	the batch keeps 50% of the outside shelf life.
 
 	This models the idea that food does not become 'fresh again' when moved,
-	but continues aging consistently under the new storage conditions."
+	but continues aging consistently under the new storage conditions.
+	The fraction is kept exactly, so the remaining days can be a fraction of a day:
+	rounding them would let food gain days when moved back and forth."
 
 	| oldMaxLife newMaxLife |
 	isInFridge = aBoolean ifTrue: [ ^ self ].
-	
+
 	oldMaxLife := category shelfLifeGivenFridge: isInFridge.
 	newMaxLife := category shelfLifeGivenFridge: aBoolean.
-	
+
 	isInFridge := aBoolean.
-	remainingDays := (newMaxLife * (remainingDays / oldMaxLife)) ceiling.
+	remainingDays := newMaxLife * (remainingDays / oldMaxLife)
 ]
 
 { #category : 'accessing' }
@@ -151,6 +153,7 @@ FEBFoodBatch >> remainingDays [
 
 { #category : 'as yet unclassified' }
 FEBFoodBatch >> willExpireTomorrow [
+	"Answer whether the batch is in its last day: it has a day or less left"
 
-	^ remainingDays = 1
+	^ remainingDays <= 1
 ]
