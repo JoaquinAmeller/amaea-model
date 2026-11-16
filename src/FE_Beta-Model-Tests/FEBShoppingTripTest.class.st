@@ -271,6 +271,30 @@ FEBShoppingTripTest >> testDoesNotGoFurtherThanItsTimeAllows [
 ]
 
 { #category : 'tests' }
+FEBShoppingTripTest >> testDoesNotPayForFoodThatWillSpoilBeforeItCanBeEaten [
+	"Households shop after eating, for the next day. The outlet only has staple food in its last day, which will be spoiled tomorrow."
+
+	| outlet |
+	self giveMoney: 100.
+	outlet := self
+		          outletAt: 1
+		          at: 3
+		          stocking: 1
+		          of: stapleFood.
+	(self inventoryOf: outlet) batches removeAll.
+	(self inventoryOf: outlet) addBatch: (FEBFoodBatch
+			 category: stapleFood
+			 quantity: 100
+			 fridge: false
+			 remainingDays: 1).
+
+	household goShopping.
+
+	self assert: household inventory totalQuantity equals: 0.
+	self assert: household remainingMoney equals: 100
+]
+
+{ #category : 'tests' }
 FEBShoppingTripTest >> testFoodBoughtByOneHouseholdIsGoneForTheNext [
 
 	| neighbour outlet |

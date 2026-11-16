@@ -42,6 +42,14 @@ FEBFoodInventory >> batchesExpiringTomorrow [
 ]
 
 { #category : 'as yet unclassified' }
+FEBFoodInventory >> batchesLeftTomorrowOfCategory: aCategory [
+	"Answer the batches of aCategory that will not be expired tomorrow"
+
+	^ (self batchesOfCategory: aCategory) reject: [ :each |
+		  each willExpireTomorrow ]
+]
+
+{ #category : 'as yet unclassified' }
 FEBFoodInventory >> batchesOfCategory: aCategory [
 
 	^ self nonExpiredBatches select: [ :each | each category = aCategory ]
@@ -160,8 +168,7 @@ FEBFoodInventory >> quantityInFridge [
 FEBFoodInventory >> quantityLeftTomorrowInCategory: aCategory [
 	"Answer the quantity of aCategory that will not be expired tomorrow"
 
-	^ ((self batchesOfCategory: aCategory) reject: [ :each |
-		   each willExpireTomorrow ])
+	^ (self batchesLeftTomorrowOfCategory: aCategory)
 		  sum: [ :each | each quantity ]
 		  ifEmpty: [ 0 ]
 ]

@@ -85,6 +85,23 @@ FEBOutletTest >> stock: aQuantity of: aCategory expiringIn: aNumberOfDays [
 ]
 
 { #category : 'tests' }
+FEBOutletTest >> testDoesNotSellFoodInItsLastDay [
+	"Households buy for the next day, and food in its last day will be spoiled by then"
+
+	self stock: 10 of: dairy expiringIn: 1.
+	self stock: 10 of: dairy expiringIn: 4.
+
+	self assert: (self sell: 15 of: dairy withMoney: 1000) equals: 10.
+	self
+		assert: (self outletInventory quantityInCategory: dairy)
+		equals: 10.
+	self
+		assert:
+		(household inventory batchesOfCategory: dairy) first remainingDays
+		equals: 4
+]
+
+{ #category : 'tests' }
 FEBOutletTest >> testFoodAndMoneyOnlyChangeHands [
 
 	| moneyBefore |

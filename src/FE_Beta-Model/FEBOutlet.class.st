@@ -157,40 +157,42 @@ FEBOutlet >> step [
 FEBOutlet >> take: aCategory quantity: aNumber [
 
 	| batches remainingQuantity sortedBatches sourceBatch soldBatch |
-	
 	batches := OrderedCollection new.
 	remainingQuantity := aNumber.
-	
-	"We sell fresh food first"
-	sortedBatches := (inventory batchesOfCategory: aCategory)
-		sorted: [ :a :b | a remainingDays > b remainingDays ].
-	
-	[ remainingQuantity > 0 and: [ sortedBatches isNotEmpty ] ] whileTrue: [ 
-		sourceBatch := sortedBatches first.
-		soldBatch := sourceBatch extractQuantity: (remainingQuantity min: sourceBatch quantity).
-		
-		batches add: soldBatch.
-		remainingQuantity := remainingQuantity - soldBatch quantity.
-		
-		sourceBatch isEmpty ifTrue: [ 
-			inventory removeBatch: sourceBatch.
-			sortedBatches removeFirst ] ].
-	
-	^ batches 
+
+	"We sell fresh food first, and never food in its last day"
+	sortedBatches := (inventory batchesLeftTomorrowOfCategory: aCategory)
+		                 sorted: [ :a :b |
+		                 a remainingDays > b remainingDays ].
+
+	[ remainingQuantity > 0 and: [ sortedBatches isNotEmpty ] ]
+		whileTrue: [
+				sourceBatch := sortedBatches first.
+				soldBatch := sourceBatch extractQuantity:
+					             (remainingQuantity min: sourceBatch quantity).
+
+				batches add: soldBatch.
+				remainingQuantity := remainingQuantity - soldBatch quantity.
+
+				sourceBatch isEmpty ifTrue: [
+						inventory removeBatch: sourceBatch.
+						sortedBatches removeFirst ] ].
+
+	^ batches
 ]
 
 { #category : 'as yet unclassified' }
 FEBOutlet >> take: category quantityUpTo: requestedAmount withMoneyUpTo: availableMoney [
+	"Households buy for the next day, so only food that will still be good tomorrow is for sale"
 
 	| amount availableAmount affordableAmount pricePerUnit |
-	
-	availableAmount := inventory quantityInCategory: category.
+	availableAmount := inventory quantityLeftTomorrowInCategory: category.
 	pricePerUnit := self pricePerUnitFor: category.
-	
+
 	amount := requestedAmount min: availableAmount.
-	
+
 	affordableAmount := (availableMoney / pricePerUnit) asInteger.
 	amount := amount min: affordableAmount.
-	
+
 	^ self take: category quantity: amount
 ]
