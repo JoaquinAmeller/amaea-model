@@ -97,8 +97,9 @@ FEBHouseholdCharts >> days [
 
 { #category : 'charts' }
 FEBHouseholdCharts >> indicatorsChart [
+	"One line per indicator: the three scores, and healthy diet at 1 on healthy days and 0 otherwise"
 
-	| chart palette healthy |
+	| chart palette |
 	chart := self newChart: 'Indicators'.
 	palette := self class categoricalPalette.
 	chart
@@ -116,24 +117,13 @@ FEBHouseholdCharts >> indicatorsChart [
 		values:
 		(self valuesPerDay: [ :day | household proteinAdequacyScoreOn: day ])
 		color: palette third.
-	#( 0.8 1 1.2 ) do: [ :each |
-		chart guide: 'Level ' , each printString at: each ].
-	healthy := self valuesPerDay: [ :day |
-		           household isHavingHealthyDietOn: day ].
 	chart
-		bars: 'Healthy diet'
-		values: (healthy collect: [ :each |
-					 each
-						 ifTrue: [ 0.1 ]
+		line: 'Healthy diet'
+		values: (self valuesPerDay: [ :day |
+					 (household isHavingHealthyDietOn: day)
+						 ifTrue: [ 1 ]
 						 ifFalse: [ 0 ] ])
-		color: (household colorOfLevel: #full).
-	chart
-		bars: 'Not a healthy diet'
-		values: (healthy collect: [ :each |
-					 each
-						 ifTrue: [ 0 ]
-						 ifFalse: [ 0.1 ] ])
-		color: (household colorOfLevel: #hungry).
+		color: palette fourth.
 	^ chart
 ]
 
@@ -151,7 +141,9 @@ FEBHouseholdCharts >> initializeHousehold: aHousehold [
 FEBHouseholdCharts >> mealsChart [
 
 	| chart |
-	chart := self newChart: 'Meals'.
+	chart := (self newChart: 'Meals')
+		         beCounts;
+		         yourself.
 	household cormasModel foodCategories do: [ :category |
 			chart
 				bars: category name
@@ -201,7 +193,9 @@ FEBHouseholdCharts >> newChart: aTitle [
 FEBHouseholdCharts >> purchasesChart [
 
 	| chart |
-	chart := self newChart: 'Purchases'.
+	chart := (self newChart: 'Purchases')
+		         beCounts;
+		         yourself.
 	household cormasModel foodCategories do: [ :category |
 			chart
 				bars: category name
@@ -230,7 +224,9 @@ FEBHouseholdCharts >> stepClicked: aStep [
 FEBHouseholdCharts >> stockChart [
 
 	| chart |
-	chart := self newChart: 'Stock and spoiled food'.
+	chart := (self newChart: 'Stock and spoiled food')
+		         beCounts;
+		         yourself.
 	household cormasModel foodCategories do: [ :category |
 			chart
 				bars: category name

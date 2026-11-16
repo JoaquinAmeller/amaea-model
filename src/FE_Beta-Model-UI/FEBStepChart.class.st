@@ -3,9 +3,9 @@ I am a chart of values over the recorded time steps of an entity, with a line sh
 
 ## Responsibility:
 
-- Collect named series over the steps: lines, bars stacked above zero, bars stacked below zero, and horizontal guides.
-- Draw them with Roassal, with a legend, and keep a vertical line at the selected step.
-- Turn a click into the closest recorded step and tell my listeners.
+- Collect named series over the steps: lines, and bars stacked above or below zero.
+- Draw them with Roassal, with a legend, whole steps on the x axis and, for counts, whole numbers on the y axis, and keep a vertical line at the selected step.
+- Turn a click anywhere on the chart into the closest recorded step and tell my listeners. I cannot be dragged, scrolled or zoomed.
 
 ## Collaborators:
 
@@ -14,13 +14,14 @@ I am a chart of values over the recorded time steps of an entity, with a line sh
 
 ## Public API and Key Messages
 
-- `FEBStepChart title: 'Meals' steps: #(1 2 3)` creates me.
-- `line:values:color:`, `bars:values:color:`, `barsBelow:values:color:`, `guide:at:` add series; `valuesOf:` answers a series' values.
-- `canvas` draws me the first time it is asked; `selectStep:`, `selectedStep`, `whenStepClickedDo:`, `xOfStep:`.
+- `FEBStepChart title: 'Meals' steps: #(1 2 3)` creates me; `beCounts` makes my y axis count in whole numbers.
+- `line:values:color:`, `bars:values:color:`, `barsBelow:values:color:` add series; `seriesNames` and `valuesOf:` answer them.
+- `canvas` draws me the first time it is asked; `selectStep:`, `selectedStep`, `whenStepClickedDo:`, `xOfStep:`, `xTickValues`, `yTickValues`.
 
 ```smalltalk
 | chart |
 chart := FEBStepChart title: 'Meals' steps: #(1 2 3).
+chart beCounts.
 chart bars: 'Staple food' values: #(5 8 10) color: Color green.
 chart line: 'Daily need' values: #(10 10 10) color: Color black.
 chart selectStep: 2.
@@ -29,12 +30,14 @@ chart canvas open
 
 ## Internal Representation
 
-- `series`: an OrderedCollection of Arrays `{ name. kind. values. color }`, where kind is `#line`, `#bars`, `#barsBelow` or `#guide`, in the order they were added; bars stack in that order.
-- `chart` and `canvas`: the Roassal chart and its canvas, nil until first drawn; `selectionLine`: the RSLine at the selected step.
+- `series`: an OrderedCollection of Arrays `{ name. kind. values. color }`, where kind is `#line`, `#bars` or `#barsBelow`, in the order they were added; bars stack in that order.
+- `chart` and `canvas`: the Roassal chart and its canvas, nil until first drawn; `selectionLine`: the RSLine at the selected step; `countsOnly`: whether my values are counts.
 
 ### Implementation Points
 
-- The x axis goes half a step beyond the first and last steps, so that edge bars are whole and a single step still has a range.
+- The x axis goes half a step beyond the first and last steps, so that edge bars are whole and a single step still has a range. It labels at most about ten whole steps.
+- My ticks are the chart's own default ticks, given explicit positions: adding tick decorations would draw a second, mismatched set of axes.
+- Roassal sends a click to the shape under the mouse, so every shape, and the canvas, listens to clicks. The interactions Roassal gives a canvas (dragging, scrolling, zooming, keys) are removed.
 "
 Class {
 	#name : 'FEBStepChart',
@@ -47,7 +50,8 @@ Class {
 		'canvas',
 		'selectionLine',
 		'selectedStep',
-		'stepClickedBlocks'
+		'stepClickedBlocks',
+		'countsOnly'
 	],
 	#category : 'FE_Beta-Model-UI',
 	#package : 'FE_Beta-Model-UI'
@@ -69,8 +73,7 @@ FEBStepChart >> addLegend [
 	legend container: canvas.
 	legend layout horizontal gapSize: 12.
 	series do: [ :each |
-			each second = #guide ifFalse: [
-				legend text: each first withBoxColor: each fourth ] ].
+		legend text: each first withBoxColor: each fourth ].
 	legend location below offset: 0 @ 18.
 	legend build
 ]
@@ -98,12 +101,10 @@ FEBStepChart >> addPlotsTo: aChart [
 							 color: each fourth;
 							 yourself).
 					below := below - values ].
-			(#( #line #guide ) includes: kind) ifTrue: [
+			kind = #line ifTrue: [
 					aChart add: ((RSLinePlot new x: steps y: values)
 							 color: each fourth;
-							 width: (kind = #line
-									  ifTrue: [ 2 ]
-									  ifFalse: [ 1 ]);
+							 width: 2;
 							 yourself) ] ]
 ]
 
@@ -129,11 +130,25 @@ FEBStepChart >> barsBelow: aName values: aCollection color: aColor [
 			aColor }
 ]
 
+{ #category : 'series' }
+FEBStepChart >> beCounts [
+	"My values are counts, such as meals: label them with whole numbers"
+
+	countsOnly := true
+]
+
 { #category : 'accessing' }
 FEBStepChart >> canvas [
 
 	canvas ifNil: [ self draw ].
 	^ canvas
+]
+
+{ #category : 'accessing' }
+FEBStepChart >> chartDecorations [
+
+	self canvas.
+	^ chart decorations
 ]
 
 { #category : 'private' }
@@ -145,18 +160,28 @@ FEBStepChart >> clickedAt: anX [
 
 { #category : 'drawing' }
 FEBStepChart >> draw [
-	"Build the Roassal chart of my series, its legend, the selected-step line and the click handler"
+	"Build the Roassal chart of my series, with whole steps and, for counts, whole numbers on its axes, its legend, the selected-step line and the clicks. The chart cannot be dragged, scrolled or zoomed."
 
+	| xTicks yTicks |
 	chart := RSCompositeChart new.
 	chart extent: 800 @ 400.
 	chart title: title.
+	self addPlotsTo: chart.
 	steps ifNotEmpty: [
 			chart
 				minChartValueX: steps first - 0.5;
-				maxChartValueX: steps last + 0.5 ].
-	self addPlotsTo: chart.
-	chart addDecoration: RSHorizontalTick new integer.
-	chart addDecoration: RSVerticalTick new.
+				maxChartValueX: steps last + 0.5.
+			xTicks := self xTickValues.
+			chart
+				xTicks: xTicks
+				labels: (xTicks collect: [ :each | each printString ]) ].
+	yTicks := self yTickValues.
+	yTicks ifNotNil: [
+			chart
+				minChartValueY: yTicks first;
+				maxChartValueY: yTicks last;
+				yTicks: yTicks
+				labels: (yTicks collect: [ :each | each printString ]) ].
 	chart build.
 	canvas := chart canvas.
 	self addLegend.
@@ -166,23 +191,25 @@ FEBStepChart >> draw [
 		                 yourself.
 	canvas add: selectionLine.
 	self placeSelectionLine.
-	canvas
-		when: RSMouseClick
-		do: [ :event | self clickedAt: event position x ]
-		for: self.
+	self removeCanvasInteractions.
+	self listenToClicks.
 	"Fill the space the chart is given in its window"
 	canvas when: RSExtentChangedEvent do: [ canvas zoomToFit ] for: self
 ]
 
-{ #category : 'series' }
-FEBStepChart >> guide: aName at: aValue [
-	"A thin horizontal line at aValue, such as a threshold"
+{ #category : 'private' }
+FEBStepChart >> highestValue [
+	"The top of the highest stack of bars or the highest point of a line"
 
-	series add: {
-			aName.
-			#guide.
-			(steps collect: [ :each | aValue ]).
-			Color lightGray }
+	| stacked |
+	stacked := steps collect: [ :each | 0 ].
+	series do: [ :each |
+		each second = #bars ifTrue: [ stacked := stacked + each third ] ].
+	^ stacked , (series
+		   select: [ :each | each second = #line ]
+		   thenCollect: [ :each | each third max ])
+		  inject: 0
+		  into: [ :max :each | max max: each ]
 ]
 
 { #category : 'initialization' }
@@ -191,7 +218,8 @@ FEBStepChart >> initializeTitle: aString steps: aCollectionOfSteps [
 	title := aString.
 	steps := aCollectionOfSteps asArray.
 	series := OrderedCollection new.
-	stepClickedBlocks := OrderedCollection new
+	stepClickedBlocks := OrderedCollection new.
+	countsOnly := false
 ]
 
 { #category : 'series' }
@@ -202,6 +230,28 @@ FEBStepChart >> line: aName values: aCollection color: aColor [
 			#line.
 			aCollection asArray.
 			aColor }
+]
+
+{ #category : 'private' }
+FEBStepChart >> listenToClicks [
+	"A click goes to the shape under the mouse, bar, line or label, or to the canvas when there is none: listen to all of them"
+
+	(canvas shapes copyWith: canvas) do: [ :each |
+			each
+				when: RSMouseClick
+				do: [ :event | self clickedAt: event position x ]
+				for: self ]
+]
+
+{ #category : 'private' }
+FEBStepChart >> lowestValue [
+	"The bottom of the stack of bars below zero, or zero"
+
+	| stacked |
+	stacked := steps collect: [ :each | 0 ].
+	series do: [ :each |
+		each second = #barsBelow ifTrue: [ stacked := stacked - each third ] ].
+	^ stacked inject: 0 into: [ :min :each | min min: each ]
 ]
 
 { #category : 'selecting' }
@@ -216,6 +266,16 @@ FEBStepChart >> placeSelectionLine [
 	canvas signalUpdate
 ]
 
+{ #category : 'private' }
+FEBStepChart >> removeCanvasInteractions [
+	"Remove the dragging, scrolling, zooming and keyboard navigation Roassal gives a canvas"
+
+	((canvas announcer subscriptions subscriptions collect: [ :each |
+		  each subscriber ]) asSet select: [ :each |
+		 each isKindOf: RSInteraction ]) do: [ :each |
+		canvas announcer unsubscribe: each ]
+]
+
 { #category : 'selecting' }
 FEBStepChart >> selectStep: aStep [
 
@@ -227,6 +287,12 @@ FEBStepChart >> selectStep: aStep [
 FEBStepChart >> selectedStep [
 
 	^ selectedStep
+]
+
+{ #category : 'accessing' }
+FEBStepChart >> seriesNames [
+
+	^ series collect: [ :each | each first ]
 ]
 
 { #category : 'accessing' }
@@ -265,4 +331,29 @@ FEBStepChart >> xOfStep: aStep [
 
 	self canvas.
 	^ chart xScale scale: aStep
+]
+
+{ #category : 'accessing' }
+FEBStepChart >> xTickValues [
+	"Whole steps to label, at most about ten of them, so that labels never repeat or overlap"
+
+	| stride |
+	steps ifEmpty: [ ^ #(  ) ].
+	stride := (steps size / 10) ceiling max: 1.
+	^ (1 to: steps size by: stride) collect: [ :index | steps at: index ]
+]
+
+{ #category : 'accessing' }
+FEBStepChart >> yTickValues [
+	"For counts, whole numbers spaced evenly from the lowest to the highest value drawn; otherwise nil, and Roassal chooses the ticks"
+
+	| highest lowest stepSize |
+	countsOnly ifFalse: [ ^ nil ].
+	highest := self highestValue max: 1.
+	lowest := self lowestValue.
+	stepSize := #( 1 2 5 10 20 50 100 200 500 1000 2000 5000 10000 )
+		            detect: [ :each | each >= (highest - lowest / 5) ]
+		            ifNone: [ (highest - lowest / 5) ceiling ].
+	^ ((lowest / stepSize) floor * stepSize to:
+	   (highest / stepSize) ceiling * stepSize by: stepSize) asArray
 ]
