@@ -89,6 +89,19 @@ FEBHouseholdDay >> moneySpent [
 ]
 
 { #category : 'accessing' }
+FEBHouseholdDay >> numberOfMealsOf: aCategory [
+
+	^ meals count: [ :each | each category = aCategory ]
+]
+
+{ #category : 'accessing' }
+FEBHouseholdDay >> numberOfSubstitutesOf: aCategory [
+
+	^ meals count: [ :each |
+		  each category = aCategory and: [ each reason = #substitute ] ]
+]
+
+{ #category : 'accessing' }
 FEBHouseholdDay >> purchases [
 
 	^ purchases

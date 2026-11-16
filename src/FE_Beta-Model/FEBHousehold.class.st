@@ -265,12 +265,23 @@ FEBHousehold >> buildShoppingList [
 FEBHousehold >> caloricAdequacyColor [
 
 	history isEmpty ifTrue: [ ^ CMColor gray ].
+	^ self colorOfLevel:
+		  (self caloricAdequacyLevelOf: self caloricAdequacyScore)
+]
 
-	self isCaloricSeverelyInadequate ifTrue: [
-		^ Color fromHexString: 'B85353' ]. "red"
-	self isCaloricInadequate ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
-	self isCaloricAdequate ifTrue: [ ^ Color fromHexString: '78A882' ]. "green"
-	self isCaloricExcess ifTrue: [ ^ Color fromHexString: '9274B5' ] "purple"
+{ #category : 'indicators' }
+FEBHousehold >> caloricAdequacyLevelOf: aScore [
+
+	aScore < 0.8 ifTrue: [ ^ #severelyInadequate ].
+	aScore < 1 ifTrue: [ ^ #inadequate ].
+	aScore < 1.2 ifTrue: [ ^ #adequate ].
+	^ #excess
+]
+
+{ #category : 'indicators' }
+FEBHousehold >> caloricAdequacyLevelOn: aDay [
+
+	^ self caloricAdequacyLevelOf: (self caloricAdequacyScoreOn: aDay)
 ]
 
 { #category : 'testing' }
@@ -287,6 +298,19 @@ FEBHousehold >> caloricAdequacyScoreOn: aDay [
 
 	^ (aDay meals sum: [ :each | each category kilocaloriesPerPortion ])
 	  / (2000 * householdSize)
+]
+
+{ #category : 'indicators' }
+FEBHousehold >> colorOfLevel: aLevel [
+	"Answer the colour showing an indicator's level: red when it is bad, orange when it is short, green when it is right, purple when it is too much"
+
+	(#( #hungry #severelyInadequate ) includes: aLevel) ifTrue: [
+		^ Color fromHexString: 'B85353' ].
+	(#( #unsatiated #inadequate ) includes: aLevel) ifTrue: [
+		^ Color fromHexString: 'E5A16D' ].
+	(#( #full #adequate ) includes: aLevel) ifTrue: [
+		^ Color fromHexString: '78A882' ].
+	^ Color fromHexString: '9274B5'
 ]
 
 { #category : 'consuming' }
@@ -424,6 +448,12 @@ FEBHousehold >> findNonPerishableSubstitutionFor: aCategory [
 ]
 
 { #category : 'accessing' }
+FEBHousehold >> foodPreferenceProportions [
+
+	^ foodPreferenceProportions
+]
+
+{ #category : 'accessing' }
 FEBHousehold >> foodPreferenceProportions: aDictionary [
 
 	| orderedDict |
@@ -534,22 +564,29 @@ FEBHousehold >> inventory [
 
 { #category : 'testing' }
 FEBHousehold >> isCaloricAdequate [
-^ (self caloricAdequacyScore < 1.2) and: [ self caloricAdequacyScore >= 1 ].
+
+	^ (self caloricAdequacyLevelOf: self caloricAdequacyScore)
+	  = #adequate
 ]
 
 { #category : 'testing' }
 FEBHousehold >> isCaloricExcess [
-^ self caloricAdequacyScore >= 1.2.
+
+	^ (self caloricAdequacyLevelOf: self caloricAdequacyScore) = #excess
 ]
 
 { #category : 'testing' }
 FEBHousehold >> isCaloricInadequate [
-^ (self caloricAdequacyScore < 1) and: [ self caloricAdequacyScore >= 0.8 ].
+
+	^ (self caloricAdequacyLevelOf: self caloricAdequacyScore)
+	  = #inadequate
 ]
 
 { #category : 'testing' }
 FEBHousehold >> isCaloricSeverelyInadequate [
-^ self caloricAdequacyScore < 0.8.
+
+	^ (self caloricAdequacyLevelOf: self caloricAdequacyScore)
+	  = #severelyInadequate
 ]
 
 { #category : 'as yet unclassified' }
@@ -560,7 +597,8 @@ FEBHousehold >> isDesperateSaver [
 
 { #category : 'testing' }
 FEBHousehold >> isFull [
-^ self satietyScore >= 1
+
+	^ (self satietyLevelOf: self satietyScore) = #full
 ]
 
 { #category : 'testing' }
@@ -591,7 +629,8 @@ FEBHousehold >> isHavingHealthyDietOn: aDay [
 
 { #category : 'testing' }
 FEBHousehold >> isHungry [
-^ self satietyScore < 0.8
+
+	^ (self satietyLevelOf: self satietyScore) = #hungry
 ]
 
 { #category : 'as yet unclassified' }
@@ -600,19 +639,32 @@ FEBHousehold >> isMoneySaver [
 	^ strategy isMoneySaver
 ]
 
+{ #category : 'indicators' }
+FEBHousehold >> isPreferenceFor: aCategory fulfilledOn: aDay [
+	"Answer whether the share of the daily need eaten of aCategory that day, whatever the reason each meal was eaten, is at least the household's preference for it"
+
+	^ (self preferenceDifferenceOf: aCategory on: aDay) >= 0
+]
+
 { #category : 'testing' }
 FEBHousehold >> isProteinAdequate [
-^ self proteinAdequacyScore >= 1.
+
+	^ (self proteinAdequacyLevelOf: self proteinAdequacyScore)
+	  = #adequate
 ]
 
 { #category : 'testing' }
 FEBHousehold >> isProteinInadequate [
-^ (self proteinAdequacyScore < 1) and: [ self proteinAdequacyScore >= 0.8 ].
+
+	^ (self proteinAdequacyLevelOf: self proteinAdequacyScore)
+	  = #inadequate
 ]
 
 { #category : 'testing' }
 FEBHousehold >> isProteinSeverelyInadequate [
-^ self proteinAdequacyScore < 0.8.
+
+	^ (self proteinAdequacyLevelOf: self proteinAdequacyScore)
+	  = #severelyInadequate
 ]
 
 { #category : 'as yet unclassified' }
@@ -629,7 +681,8 @@ FEBHousehold >> isTimeSaver [
 
 { #category : 'testing' }
 FEBHousehold >> isUnsatiated [
-^ (self satietyScore < 1) and: [self satietyScore > 0.8 ]
+
+	^ (self satietyLevelOf: self satietyScore) = #unsatiated
 ]
 
 { #category : 'consuming' }
@@ -718,6 +771,22 @@ FEBHousehold >> povSatietyIndicator [
 		size: self sizeOfPovBasedOnHouseholdSize
 ]
 
+{ #category : 'indicators' }
+FEBHousehold >> preferenceDifferenceOf: aCategory on: aDay [
+	"Answer the share of the daily need eaten of aCategory that day, less the household's preference for it: negative when it ate less than it prefers"
+
+	^ (aDay numberOfMealsOf: aCategory) / dailyNeed
+	  - (self preferenceOf: aCategory)
+]
+
+{ #category : 'indicators' }
+FEBHousehold >> preferenceOf: aCategory [
+	"Answer the share of the daily need the household prefers to eat of aCategory, as an exact fraction, 0 for a category it does not prefer"
+
+	^ (foodPreferenceProportions at: aCategory ifAbsent: [ 0 ])
+		  asMinimalDecimalFraction
+]
+
 { #category : 'consuming' }
 FEBHousehold >> preferenceRankOf: aCategory [
 	"Answer the position of aCategory in the preferences. A category outside them comes after all of them."
@@ -731,11 +800,22 @@ FEBHousehold >> preferenceRankOf: aCategory [
 FEBHousehold >> proteinAdequacyColor [
 
 	history isEmpty ifTrue: [ ^ CMColor gray ].
+	^ self colorOfLevel:
+		  (self proteinAdequacyLevelOf: self proteinAdequacyScore)
+]
 
-	self isProteinSeverelyInadequate ifTrue: [
-		^ Color fromHexString: 'B85353' ]. "red"
-	self isProteinInadequate ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
-	self isProteinAdequate ifTrue: [ ^ Color fromHexString: '78A882' ] "green"
+{ #category : 'indicators' }
+FEBHousehold >> proteinAdequacyLevelOf: aScore [
+
+	aScore < 0.8 ifTrue: [ ^ #severelyInadequate ].
+	aScore < 1 ifTrue: [ ^ #inadequate ].
+	^ #adequate
+]
+
+{ #category : 'indicators' }
+FEBHousehold >> proteinAdequacyLevelOn: aDay [
+
+	^ self proteinAdequacyLevelOf: (self proteinAdequacyScoreOn: aDay)
 ]
 
 { #category : 'testing' }
@@ -800,10 +880,21 @@ FEBHousehold >> resetRemainingTimeAndMoney [
 FEBHousehold >> satietyIndicatorColor [
 
 	history isEmpty ifTrue: [ ^ CMColor gray ].
+	^ self colorOfLevel: (self satietyLevelOf: self satietyScore)
+]
 
-	self isHungry ifTrue: [ ^ Color fromHexString: 'B85353' ]. "red"
-	self isUnsatiated ifTrue: [ ^ Color fromHexString: 'E5A16D' ]. "yellow/orange"
-	self isFull ifTrue: [ ^ Color fromHexString: '78A882' ] "green"
+{ #category : 'indicators' }
+FEBHousehold >> satietyLevelOf: aScore [
+
+	aScore < 0.8 ifTrue: [ ^ #hungry ].
+	aScore < 1 ifTrue: [ ^ #unsatiated ].
+	^ #full
+]
+
+{ #category : 'indicators' }
+FEBHousehold >> satietyLevelOn: aDay [
+
+	^ self satietyLevelOf: (self satietyScoreOn: aDay)
 ]
 
 { #category : 'testing' }
@@ -873,6 +964,12 @@ FEBHousehold >> store: aBatch [
 			aBatch moveOutsideFridge ].
 	inventory addBatch: aBatch.
 	^ quantityInFridge
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> strategy [
+
+	^ strategy
 ]
 
 { #category : 'adding' }

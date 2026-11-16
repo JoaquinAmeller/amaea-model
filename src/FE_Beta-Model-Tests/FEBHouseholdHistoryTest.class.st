@@ -95,10 +95,50 @@ FEBHouseholdHistoryTest >> setUp [
 ]
 
 { #category : 'tests' }
+FEBHouseholdHistoryTest >> testADayCountsTheMealsAndSubstitutesOfEachCategory [
+	"Only staple food: 5 meals as its own share, and 5 in place of fruits and vegetables and animal proteins"
+
+	self onDay: 1 eat: { (stapleFood -> 10) }.
+
+	self assert: ((self dayAt: 1) numberOfMealsOf: stapleFood) equals: 10.
+	self
+		assert: ((self dayAt: 1) numberOfSubstitutesOf: stapleFood)
+		equals: 5.
+	self
+		assert: ((self dayAt: 1) numberOfMealsOf: fruitsAndVegetables)
+		equals: 0
+]
+
+{ #category : 'tests' }
 FEBHouseholdHistoryTest >> testAHouseholdThatHasNotEatenYetCountsAsFull [
 
 	self assert: household satietyScore equals: 1.
 	self assert: household isFull
+]
+
+{ #category : 'tests' }
+FEBHouseholdHistoryTest >> testAPreferenceIsFulfilledWhenItsShareWasEaten [
+	"Fulfilled when the share of the daily need eaten is at least the preference"
+
+	self onDay: 1 eat: {
+			(stapleFood -> 5).
+			(fruitsAndVegetables -> 3).
+			(animalProteins -> 2) }.
+	self onDay: 2 eat: {
+			(stapleFood -> 8).
+			(animalProteins -> 2) }.
+
+	self assert: (household
+			 isPreferenceFor: fruitsAndVegetables
+			 fulfilledOn: (self dayAt: 1)).
+	self deny: (household
+			 isPreferenceFor: fruitsAndVegetables
+			 fulfilledOn: (self dayAt: 2)).
+	self assert:
+		(household isPreferenceFor: stapleFood fulfilledOn: (self dayAt: 2)).
+	self assert: (household
+			 isPreferenceFor: animalProteins
+			 fulfilledOn: (self dayAt: 2))
 ]
 
 { #category : 'tests' }
@@ -148,6 +188,30 @@ FEBHouseholdHistoryTest >> testHealthyDietLooksAtTheWeekUpToTheDay [
 ]
 
 { #category : 'tests' }
+FEBHouseholdHistoryTest >> testLevelsCanBeComputedForAnyDay [
+	"10 meals of staple food are 2600 kilocalories and 40 grams of protein; 3 meals are 780 kilocalories and 12 grams"
+
+	self onDay: 1 eat: { (stapleFood -> 10) }.
+	self onDay: 2 eat: { (stapleFood -> 3) }.
+
+	self
+		assert: (household satietyLevelOn: (self dayAt: 1))
+		equals: #full.
+	self
+		assert: (household satietyLevelOn: (self dayAt: 2))
+		equals: #hungry.
+	self
+		assert: (household caloricAdequacyLevelOn: (self dayAt: 1))
+		equals: #excess.
+	self
+		assert: (household caloricAdequacyLevelOn: (self dayAt: 2))
+		equals: #severelyInadequate.
+	self
+		assert: (household proteinAdequacyLevelOn: (self dayAt: 1))
+		equals: #severelyInadequate
+]
+
+{ #category : 'tests' }
 FEBHouseholdHistoryTest >> testSatietyCanBeComputedForAnyDay [
 
 	self onDay: 1 eat: { (stapleFood -> 10) }.
@@ -158,4 +222,28 @@ FEBHouseholdHistoryTest >> testSatietyCanBeComputedForAnyDay [
 		assert: (household satietyScoreOn: (self dayAt: 2))
 		equals: 3 / 10.
 	self assert: household satietyScore equals: 3 / 10
+]
+
+{ #category : 'tests' }
+FEBHouseholdHistoryTest >> testThePreferenceDifferenceIsTheShareOfTheDailyNeedEatenLessThePreference [
+
+	self onDay: 2 eat: {
+			(stapleFood -> 8).
+			(animalProteins -> 2) }.
+
+	self
+		assert:
+		(household preferenceDifferenceOf: stapleFood on: (self dayAt: 2))
+		equals: 3 / 10.
+	self
+		assert: (household
+				 preferenceDifferenceOf: fruitsAndVegetables
+				 on: (self dayAt: 2))
+		equals: -3 / 10.
+	self
+		assert:
+		(household
+			 preferenceDifferenceOf: animalProteins
+			 on: (self dayAt: 2))
+		equals: 0
 ]
