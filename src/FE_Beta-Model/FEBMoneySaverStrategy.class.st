@@ -14,7 +14,7 @@ FEBMoneySaverStrategy >> isMoneySaver [
 { #category : 'as yet unclassified' }
 FEBMoneySaverStrategy >> moneyThreshold [
 
-	^ 0.2
+	^ 0.6
 ]
 
 { #category : 'as yet unclassified' }
@@ -26,5 +26,5 @@ FEBMoneySaverStrategy >> shapeOfPov [
 { #category : 'as yet unclassified' }
 FEBMoneySaverStrategy >> timeThreshold [
 
-	^ 0.6
+	^ 0.2
 ]

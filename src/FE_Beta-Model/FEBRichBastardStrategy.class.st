@@ -14,7 +14,7 @@ FEBRichBastardStrategy >> isRichBastard [
 { #category : 'as yet unclassified' }
 FEBRichBastardStrategy >> moneyThreshold [
 
-	^ 0.6
+	^ 0.2
 ]
 
 { #category : 'as yet unclassified' }
@@ -26,5 +26,5 @@ FEBRichBastardStrategy >> shapeOfPov [
 { #category : 'as yet unclassified' }
 FEBRichBastardStrategy >> timeThreshold [
 
-	^ 0.6
+	^ 0.2
 ]

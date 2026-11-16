@@ -393,7 +393,7 @@ FEBShoppingTripTest >> testNeverSpendsMoreThanItHas [
 
 { #category : 'tests' }
 FEBShoppingTripTest >> testNextToAWellStockedOutletAHouseholdEatsItsPreferredShareOfEachFoodEveryDay [
-	"With the strategy that keeps to the preferences, rather than eating food in its last day first"
+	"With all the money it needs, and the strategy that keeps to the preferences rather than eating food in its last day first"
 
 	| days fruitsAndVegetables previousStrategy |
 	fruitsAndVegetables := model foodCategoryNamed:
@@ -401,7 +401,7 @@ FEBShoppingTripTest >> testNextToAWellStockedOutletAHouseholdEatsItsPreferredSha
 	previousStrategy := FEBHousehold consumptionStrategySymbol.
 	FEBHousehold consumptionStrategySymbol: #'Some fuck about spoil'.
 	[
-		self giveMoney: 100.
+		self giveMoney: 1000.
 		days := self
 			        livePreferringStaplesFruitsAndProteinsFor: 10
 			        nextTo: (self
