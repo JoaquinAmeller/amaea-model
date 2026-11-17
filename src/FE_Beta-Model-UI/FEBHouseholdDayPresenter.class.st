@@ -12,6 +12,7 @@ I show one day of a household's history: its meals, its indicators, its purchase
 - `FEBHousehold`: computes shares, indicators, levels and colours for any of its days.
 - `FEBHouseholdDay`: the day I show.
 - `FEBIndicatorReading`: each row of my indicators table.
+- `FEBDayPresenter`: my superclass, laying out titled sections.
 - `FEBHouseholdDashboard`: creates me and tells me which day to show.
 
 ## Public API and Key Messages
@@ -33,7 +34,7 @@ presenter open
 "
 Class {
 	#name : 'FEBHouseholdDayPresenter',
-	#superclass : 'SpPresenter',
+	#superclass : 'FEBDayPresenter',
 	#instVars : [
 		'household',
 		'day',
@@ -385,14 +386,4 @@ FEBHouseholdDayPresenter >> spoiledTable [
 FEBHouseholdDayPresenter >> stockTable [
 
 	^ stockTable
-]
-
-{ #category : 'layout' }
-FEBHouseholdDayPresenter >> title: aString with: aSummaryLabel [
-	"A section's title at the left of the line, and its summary at the right"
-
-	^ SpBoxLayout newLeftToRight
-		  add: aString expand: false;
-		  addLast: aSummaryLabel expand: false;
-		  yourself
 ]
