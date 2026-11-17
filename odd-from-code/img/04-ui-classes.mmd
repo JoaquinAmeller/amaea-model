@@ -1,0 +1,65 @@
+classDiagram
+    direction LR
+    class SpPresenter
+    class FEBEntityDashboard {
+        <<abstract>>
+        entity
+        navigator : FEBStepNavigator
+        dayPresenter
+        charts : FEBEntityCharts
+        notebook
+        +refresh()
+        +followSimulation()
+    }
+    class FEBHouseholdDashboard
+    class FEBOutletDashboard
+    class FEBDayPresenter
+    class FEBHouseholdDayPresenter {
+        mealsTable
+        indicatorsTable
+        purchasesTable
+        spoiledTable
+        stockTable
+    }
+    class FEBOutletDayPresenter {
+        salesTable
+        foodTable
+    }
+    class FEBEntityCharts {
+        <<abstract>>
+        +buildCharts()
+    }
+    class FEBHouseholdCharts {
+        Indicators
+        Meals
+        Purchases
+        Money and time spent
+        Stock and spoiled food
+    }
+    class FEBOutletCharts {
+        Sales
+        Food in and out
+        Stock
+        Households served
+    }
+    class FEBStepChart
+    class FEBStepChartAxes
+    class FEBStepNavigator
+    class FEBIndicatorReading
+    SpPresenter <|-- FEBEntityDashboard
+    FEBEntityDashboard <|-- FEBHouseholdDashboard
+    FEBEntityDashboard <|-- FEBOutletDashboard
+    SpPresenter <|-- FEBDayPresenter
+    FEBDayPresenter <|-- FEBHouseholdDayPresenter
+    FEBDayPresenter <|-- FEBOutletDayPresenter
+    FEBEntityCharts <|-- FEBHouseholdCharts
+    FEBEntityCharts <|-- FEBOutletCharts
+    FEBEntityDashboard *-- FEBStepNavigator
+    FEBEntityDashboard *-- FEBEntityCharts
+    FEBEntityCharts *-- FEBStepChart
+    FEBStepChart ..> FEBStepChartAxes
+    FEBHouseholdDashboard *-- FEBHouseholdDayPresenter
+    FEBOutletDashboard *-- FEBOutletDayPresenter
+    FEBHouseholdDayPresenter ..> FEBIndicatorReading
+    FEBHouseholdDayPresenter ..> FEBOutletDashboard : opens on purchase
+    FEBOutletDayPresenter ..> FEBHouseholdDashboard : opens on sale

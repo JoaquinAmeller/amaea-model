@@ -1,0 +1,98 @@
+classDiagram
+    direction LR
+    class FEBModel {
+        +numberOfHouseholds : Integer
+        +numberOfOutlets : Integer
+        +foodCategories : OrderedCollection~FEBFoodCategory~
+        +step()
+        +initBigGridScenario()
+        +initUnconstraintedScenario()
+        +initCustomizable()
+        +probes()
+    }
+    class FEBCell {
+        +state : Symbol = empty
+        +timeToTravelTo(cell) Duration
+    }
+    class FEBHousehold {
+        +householdSize : Integer [2..5]
+        +dailyNeed : Integer = 10 x size
+        +foodPreferenceProportions : OrderedDictionary
+        +substitutionList : Dictionary
+        +availableMoneyPerStep : Number
+        +availableTimePerStep : Duration
+        +remainingMoney : Number
+        +remainingTime : Duration
+        +hungerMemory : Integer
+        +satisfactionMemory : Integer (unused)
+        +step()
+        +consumeFood()
+        +goShopping()
+        +buildShoppingList()
+    }
+    class FEBOutlet {
+        +prices : Dictionary (5 per meal)
+        +restockAmount : Integer (class param)
+        +step()
+        +restock()
+        +sellCategoryTo(household)
+    }
+    class FEBFoodInventory {
+        +batches : OrderedCollection
+        +trashbin : OrderedCollection
+        +fridgeCapacity : Integer
+        +becomeOneDayOlder()
+        +quantityLeftTomorrowInCategory(c)
+        +freeFridgeSpace()
+    }
+    class FEBFoodBatch {
+        +category : FEBFoodCategory
+        +quantity : Integer (meals)
+        +isInFridge : Boolean
+        +remainingDays : Number
+        +becomeOneDayOlder()
+        +moveToFridge(bool)
+        +extractQuantity(n)
+    }
+    class FEBFoodCategory {
+        +name : String
+        +shelfLifeInFridge : Integer
+        +shelfLifeOutsideFridge : Integer
+        +kilocaloriesPerPortion : Number
+        +proteinsPerPortion : Number
+        +shouldBeStoredInFridge() Boolean
+    }
+    class FEBShoppingList {
+        +essentialNeeds : OrderedDictionary
+        +storageNeeds : OrderedDictionary
+    }
+    class FEBPurchase {
+        +household
+        +outlet
+        +category
+        +quantity : Integer
+        +price : Number
+        +quantityInFridge : Integer
+    }
+    class FEBMeal {
+        +category
+        +reason : ownShare|substitute|leftover|lastDay
+    }
+    CMModel <|-- FEBModel
+    CMAgent <|-- FEBHousehold
+    CMAgent <|-- FEBOutlet
+    CMCell <|-- FEBCell
+    FEBModel "1" o-- "*" FEBHousehold
+    FEBModel "1" o-- "*" FEBOutlet
+    FEBModel "1" o-- "*" FEBCell
+    FEBModel "1" *-- "5" FEBFoodCategory
+    FEBHousehold "*" --> "1" FEBCell : located on
+    FEBOutlet "*" --> "1" FEBCell : located on
+    FEBHousehold "*" --> "*" FEBOutlet : knows all
+    FEBHousehold "1" *-- "1" FEBFoodInventory
+    FEBOutlet "1" *-- "1" FEBFoodInventory
+    FEBFoodInventory "1" *-- "*" FEBFoodBatch
+    FEBFoodBatch "*" --> "1" FEBFoodCategory
+    FEBHousehold ..> FEBShoppingList : builds daily
+    FEBOutlet ..> FEBPurchase : creates on sale
+    FEBHousehold ..> FEBMeal : creates when eating

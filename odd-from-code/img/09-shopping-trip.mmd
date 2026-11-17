@@ -1,0 +1,16 @@
+flowchart TD
+    A([shopFor household using list]) --> B[unvisited := all outlets<br/>current := household cell]
+    B --> C{unvisited not empty<br/>AND list has any needs?}
+    C -- no --> Z([end of trip])
+    C -- yes --> D[outlet := unvisited outlet closest to current cell<br/>Chebyshev distance on the grid]
+    D --> E[t := 5 min x distance current to outlet]
+    E --> F{essential needs left?}
+    F -- yes --> G[budget := remainingTime]
+    F -- no --> H[budget := remainingTime -<br/>availableTimePerStep x timeThreshold]
+    G --> I{t at most budget?}
+    H --> I
+    I -- no --> Z
+    I -- yes --> J[current := outlet cell<br/>remove outlet from unvisited<br/>remainingTime -= t]
+    J --> K[buyEssentialAt outlet:<br/>for each essential need in list order<br/>buy with money up to remainingMoney]
+    K --> L[buyForStorageAt outlet:<br/>money := remainingMoney - availableMoneyPerStep x moneyThreshold<br/>stop when money at most 0<br/>for each storage need buy with money up to that]
+    L --> C

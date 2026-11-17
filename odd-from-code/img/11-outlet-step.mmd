@@ -1,0 +1,6 @@
+flowchart TD
+    A([Outlet step]) --> B[inventory emptyTheTrashbin]
+    B --> C[restock: repeat 10 times<br/>category := random among the 5 categories<br/>add batch of restockAmount / 10 meals,<br/>in fridge if category shouldBeStoredInFridge,<br/>full shelf life, record in today restock]
+    C --> D[inventory becomeOneDayOlder<br/>expired batches to trashbin]
+    D --> E[today recordEndOfDayOf: inventory]
+    E --> Z([end])

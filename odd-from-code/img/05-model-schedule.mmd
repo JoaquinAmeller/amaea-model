@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    participant S as Cormas simulation
+    participant M as FEBModel
+    participant H as Households (random order)
+    participant O as Outlets (random order)
+    participant P as Probes
+    S->>M: step (control method, once per time step t)
+    M->>M: shuffle households
+    loop each household h
+        M->>H: h step
+        Note over H: empty trashbin, eat, maybe shop,<br/>age food, record end of day
+        H-->>O: buy food (sellCategory...) at visited outlets
+    end
+    M->>M: shuffle outlets
+    loop each outlet o
+        M->>O: o step
+        Note over O: empty trashbin, restock,<br/>age food, record end of day
+    end
+    S->>P: collect probe values for step t
+    S-->>S: announce CMTimeStepEnded (dashboards refresh)

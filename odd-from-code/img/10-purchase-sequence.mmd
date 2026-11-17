@@ -1,0 +1,27 @@
+sequenceDiagram
+    participant SS as FEBSimpleShoppingStrategy
+    participant O as FEBOutlet
+    participant OI as Outlet inventory
+    participant H as FEBHousehold
+    participant HI as Household inventory
+    participant L as FEBShoppingList
+    SS->>O: sellCategory c quantityUpTo q withMoneyUpTo m to h
+    O->>OI: quantityLeftTomorrowInCategory c
+    Note over O: amount := min(q, available, floor(m / price c))
+    O->>OI: take c quantity amount<br/>freshest batches first, never last-day food
+    OI-->>O: extracted batches
+    alt amount is 0
+        O-->>SS: 0
+    else amount above 0
+        O->>O: purchase := FEBPurchase(h, o, c, amount, amount x price)
+        O->>H: receive batches for purchase
+        loop each batch
+            H->>H: store batch
+            Note over H,HI: fridge food goes into fridge up to free space,<br/>the rest moves outside and its shelf life<br/>is scaled to the outside shelf life
+            H->>HI: addBatch (merge if same category,<br/>fridge state and remainingDays)
+        end
+        H->>H: remainingMoney -= price<br/>today addPurchase
+        O->>O: today addSale purchase
+        O-->>SS: amount
+        SS->>L: decreaseNeedOf c by amount<br/>(essential first, then storage)
+    end

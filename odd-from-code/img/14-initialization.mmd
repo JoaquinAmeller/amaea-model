@@ -1,0 +1,16 @@
+flowchart TD
+    A([Model created]) --> B[CMModel initializeParameters:<br/>class parameters reset to pragma defaults]
+    B --> C{init method}
+    C -- initBigGridScenario --> D1[100 households, 40 outlets<br/>grid 30 x 30, 8-neighbourhood, closed]
+    C -- initUnconstraintedScenario --> D2[2 households, 20 outlets<br/>money 2000, time 24 h, fridge 500,<br/>restock 300, grid 5 x 5]
+    C -- initCustomizable --> D3[households and outlets from parameters<br/>restock 3000, grid 6 x 6]
+    D1 --> E[initializeFoodCategories: 5 categories]
+    D2 --> E
+    D3 --> E
+    E --> F[create households on random empty cells<br/>size uniform-rounded in 2..5, dailyNeed = 10 x size,<br/>money, time from class parameters, MoneySaver by default]
+    F --> G[initializePreferences:<br/>shuffled households get profile A, B, C in turn<br/>and an initial batch of dailyNeed meals<br/>of the most preferred category, outside fridge]
+    G --> H[initializeSubstitutionList: same chain for all]
+    H --> I[initializeStrategies:<br/>shuffled agents, first 50 percent MoneySaver,<br/>the rest TimeSaver]
+    I --> J[create outlets on random empty cells<br/>prices 5 per meal, initial restock]
+    J --> K[every household knows every outlet]
+    K --> Z([ready, step 0])

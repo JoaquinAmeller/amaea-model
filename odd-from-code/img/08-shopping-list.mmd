@@ -1,0 +1,12 @@
+flowchart TD
+    A([buildShoppingList]) --> B[new FEBShoppingList]
+    B --> C[Essential needs:<br/>for each category c with share s_c of dailyNeed<br/>missing := s_c - quantityLeftTomorrow c<br/>if missing above 0 add essential need]
+    C --> D[Storage needs, storageHorizon = 5:<br/>target_c := share of 5 x dailyNeed<br/>stored_c := max 0, quantityLeftTomorrow c - s_c<br/>missing := target_c - stored_c<br/>if missing above 0 add storage need]
+    D --> E[substitutePerishableFoodThatWontFitInFridge]
+    E --> F[perishable := storage categories that shouldBeStoredInFridge]
+    F --> G[excess := sum of perishable storage needs - freeFridgeSpace, at least 0]
+    G --> H{excess above 0?}
+    H -- no --> Z([answer list])
+    H -- yes --> I[take perishable categories,<br/>least preferred first]
+    I --> J[q := min excess, storage need of c<br/>decrease storage need of c by q<br/>add storage need q of first non-perishable<br/>category along the substitution chain of c<br/>excess := excess - q]
+    J --> H

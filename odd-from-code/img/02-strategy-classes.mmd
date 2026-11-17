@@ -1,0 +1,66 @@
+classDiagram
+    direction TB
+    class FEBStrategy {
+        <<abstract>>
+        +moneyThreshold() Number
+        +timeThreshold() Number
+        +shapeOfPov() Symbol
+    }
+    class FEBMoneySaverStrategy {
+        moneyThreshold = 0.6
+        timeThreshold = 0.2
+        shape = square
+    }
+    class FEBTimeSaverStrategy {
+        moneyThreshold = 0.2
+        timeThreshold = 0.6
+        shape = triangle
+    }
+    class FEBDesperateSaverStrategy {
+        moneyThreshold = 0.6
+        timeThreshold = 0.6
+        shape = circle
+    }
+    class FEBRichBastardStrategy {
+        moneyThreshold = 0.2
+        timeThreshold = 0.2
+        shape = star
+    }
+    FEBStrategy <|-- FEBMoneySaverStrategy
+    FEBStrategy <|-- FEBTimeSaverStrategy
+    FEBStrategy <|-- FEBDesperateSaverStrategy
+    FEBStrategy <|-- FEBRichBastardStrategy
+
+    class FEBShoppingStrategy {
+        <<abstract>>
+        +shopFor(household, list)
+        +unvisitedOutletClosestTo(cell, outlets)
+    }
+    class FEBSimpleShoppingStrategy {
+        +shopFor(household, list)
+        +buyAt(outlet, household, list)
+        +buyEssentialAt(...)
+        +buyForStorageAt(...)
+        +can(household) travelFor(time) with(list)
+    }
+    FEBShoppingStrategy <|-- FEBSimpleShoppingStrategy
+
+    class FEBFoodConsumptionStrategy {
+        <<abstract>>
+        +strategyName()$ String
+        +mealsEatenFirstBy(household)
+    }
+    class FEBNoSpoilWeirdoStrategy {
+        strategyName = No spoil weirdo
+        eats food in its last day first
+    }
+    class FEBSomeFuckAboutSpoilStrategy {
+        strategyName = Some fuck about spoil
+        eats nothing first
+    }
+    FEBFoodConsumptionStrategy <|-- FEBNoSpoilWeirdoStrategy
+    FEBFoodConsumptionStrategy <|-- FEBSomeFuckAboutSpoilStrategy
+
+    FEBHousehold --> FEBStrategy : strategy
+    FEBHousehold --> FEBShoppingStrategy : shoppingStrategy
+    FEBHousehold ..> FEBFoodConsumptionStrategy : class parameter consumptionStrategySymbol

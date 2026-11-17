@@ -1,0 +1,26 @@
+flowchart TB
+    subgraph Satiety["Satiety = meals eaten / dailyNeed"]
+      direction LR
+      S1["below 0.8<br/>hungry"] --> S2["0.8 to below 1<br/>unsatiated"] --> S3["1 or more<br/>full"]
+    end
+    subgraph Caloric["Caloric adequacy = kcal eaten / (2000 x size)"]
+      direction LR
+      C1["below 0.8<br/>severely inadequate"] --> C2["0.8 to below 1<br/>inadequate"] --> C3["1 to below 1.2<br/>adequate"] --> C4["1.2 or more<br/>excess"]
+    end
+    subgraph Protein["Protein adequacy = g protein eaten / (60 x size)"]
+      direction LR
+      P1["below 0.8<br/>severely inadequate"] --> P2["0.8 to below 1<br/>inadequate"] --> P3["1 or more<br/>adequate"]
+    end
+    subgraph Healthy["Healthy diet over the last 7 recorded days"]
+      direction LR
+      H2["otherwise<br/>not healthy"] --> H1["every preferred category<br/>eaten at least 7 meals<br/>healthy"]
+    end
+    Satiety ~~~ Caloric ~~~ Protein ~~~ Healthy
+    classDef bad fill:#B85353,color:#fff
+    classDef short fill:#E5A16D
+    classDef ok fill:#78A882
+    classDef excess fill:#9274B5,color:#fff
+    class S1,C1,P1,H2 bad
+    class S2,C2,P2 short
+    class S3,C3,P3,H1 ok
+    class C4 excess

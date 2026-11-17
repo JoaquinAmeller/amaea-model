@@ -1,0 +1,14 @@
+flowchart LR
+    AP["Animal proteins<br/>fridge 5 d / outside 2 d<br/>250 kcal, 37 g protein<br/>needs fridge"]
+    FV["Fruits and vegetables<br/>fridge 7 d / outside 3 d<br/>65 kcal, 1.5 g protein"]
+    ST["Staple food<br/>fridge 30 d / outside 30 d<br/>260 kcal, 4 g protein"]
+    DA["Dairy<br/>fridge 6 d / outside 2 d<br/>145 kcal, 9 g protein<br/>needs fridge"]
+    PR["Processed food<br/>fridge 30 d / outside 30 d<br/>450 kcal, 3 g protein"]
+    AP -- substituted by --> DA
+    DA -- substituted by --> ST
+    FV -- substituted by --> ST
+    ST -- substituted by --> PR
+    classDef fridge fill:#cfe3ff,stroke:#3b6fb6
+    classDef shelf fill:#f4ecd8,stroke:#9a7b3c
+    class AP,DA fridge
+    class FV,ST,PR shelf

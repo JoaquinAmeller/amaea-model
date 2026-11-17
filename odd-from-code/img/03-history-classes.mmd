@@ -1,0 +1,49 @@
+classDiagram
+    direction LR
+    class FEBHistory {
+        +days : OrderedCollection~FEBDay~
+        +dayAt(step)
+        +dayAt(step) ifAbsentPut(block)
+        +daysUpTo(day)
+        +lastDay()
+    }
+    class FEBDay {
+        +step : Integer
+        +stock : Collection~FEBStockLevel~
+        +spoiledFood : Bag~FEBFoodCategory~
+        +recordEndOfDayOf(inventory)
+        +stockOf(category)
+    }
+    class FEBHouseholdDay {
+        +meals : Bag~FEBMeal~
+        +purchases : OrderedCollection~FEBPurchase~
+        +moneyAvailable : Number or nil
+        +timeAvailable : Duration or nil
+        +timeSpent : Duration
+        +wentShopping() Boolean
+        +moneySpent() Number
+        +numberOfMealsOf(category)
+        +numberOfSubstitutesOf(category)
+    }
+    class FEBOutletDay {
+        +sales : OrderedCollection~FEBPurchase~
+        +restock : Bag~FEBFoodCategory~
+    }
+    class FEBStockLevel {
+        +category
+        +inFridge : Integer
+        +outsideFridge : Integer
+        +inLastDay : Integer
+        +total()
+    }
+    class FEBPurchase
+    class FEBMeal
+    FEBDay <|-- FEBHouseholdDay
+    FEBDay <|-- FEBOutletDay
+    FEBHistory "1" *-- "*" FEBDay
+    FEBDay "1" *-- "*" FEBStockLevel
+    FEBHouseholdDay "1" o-- "*" FEBMeal
+    FEBHouseholdDay "1" o-- "*" FEBPurchase
+    FEBOutletDay "1" o-- "*" FEBPurchase : same objects as household side
+    FEBHousehold "1" *-- "1" FEBHistory
+    FEBOutlet "1" *-- "1" FEBHistory

@@ -1,0 +1,16 @@
+stateDiagram-v2
+    [*] --> AtOutlet : restock, remainingDays = shelf life
+    AtOutlet --> AtOutlet : night, remainingDays - 1
+    AtOutlet --> Sold : remainingDays above 1 and household buys
+    AtOutlet --> Trash : remainingDays at most 0
+    Sold --> InFridge : category needs fridge and space left
+    Sold --> OutsideFridge : no fridge needed, or fridge full
+    InFridge --> OutsideFridge : overflow at storing time, shelf life scaled
+    InFridge --> LastDay : remainingDays at most 1
+    OutsideFridge --> LastDay : remainingDays at most 1
+    InFridge --> Eaten
+    OutsideFridge --> Eaten
+    LastDay --> Eaten : eaten first by No spoil weirdo
+    LastDay --> Trash : night, remainingDays at most 0
+    Eaten --> [*]
+    Trash --> [*] : trashbin emptied at start of next step

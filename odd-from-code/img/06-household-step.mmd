@@ -1,0 +1,15 @@
+flowchart TD
+    A([Household step]) --> B[inventory emptyTheTrashbin]
+    B --> C[consumeFood<br/>eat up to dailyNeed meals<br/>record meals in today]
+    C --> D[updateHungerMemoryAfterEating]
+    D --> E{shouldGoShopping?<br/>total stock below dailyNeed<br/>OR some preferred share<br/>not available tomorrow}
+    E -- no --> H
+    E -- yes --> F[goShopping]
+    F --> F1[resetRemainingTimeAndMoney<br/>money := availableMoneyPerStep<br/>time := availableTimePerStep]
+    F1 --> F2[buildShoppingList]
+    F2 --> F3[shoppingStrategy shopFor: self using: list]
+    F3 --> F4[record money, time available, time spent in today]
+    F4 --> F5[reconsiderPreference<br/>TODO: does nothing]
+    F5 --> H[inventory becomeOneDayOlder<br/>every batch remainingDays - 1<br/>expired batches go to trashbin]
+    H --> I[today recordEndOfDayOf: inventory<br/>stock levels + spoiled food]
+    I --> Z([end])

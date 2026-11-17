@@ -1,0 +1,17 @@
+flowchart TD
+    A([consumeFood]) --> B{class parameter<br/>consumptionStrategySymbol}
+    B -- No spoil weirdo --> C[eatFoodInItsLastDay<br/>batches with remainingDays at most 1,<br/>sorted by preference rank,<br/>eat up to dailyNeed, reason lastDay]
+    B -- Some fuck about spoil --> D[eat nothing first]
+    C --> E[n := dailyNeed - meals eaten]
+    D --> E
+    E --> F[eatMealsByPreference n]
+    F --> G[split n into whole meals per category<br/>mealsPerCategoryFor: largest remainder method]
+    G --> H[for each category in preference order:<br/>eat its share, soonest-expiring batch first,<br/>reason ownShare, remember missing meals]
+    H --> I[for each category with missing meals:<br/>follow substitutionList chain<br/>eat substitutes, reason substitute]
+    I --> J[eatAnyFood remaining:<br/>any non-expired food, preferred categories first,<br/>reason leftover]
+    J --> K[today addMeals: meals]
+    K --> L{meals size below dailyNeed?}
+    L -- yes --> M[hungerMemory + 1]
+    L -- no --> N[hungerMemory := 0]
+    M --> Z([answer meals])
+    N --> Z
