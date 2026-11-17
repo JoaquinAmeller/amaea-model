@@ -101,10 +101,12 @@ FEBStepNavigator >> initializePresenters [
 		                label: 'Latest';
 		                action: [ self latest ];
 		                yourself.
+	"Disabled, with a range of one, until there are steps to choose from: Spec divides by zero on an empty range"
 	slider := self newSlider
 		          min: 0;
-		          max: 0;
+		          max: 1;
 		          quantum: 1;
+		          enabled: false;
 		          yourself.
 	stepField := self newNumberInput
 		             beInteger;
@@ -179,13 +181,14 @@ FEBStepNavigator >> steps [
 
 { #category : 'accessing' }
 FEBStepNavigator >> steps: aCollectionOfSteps [
-	"Set the recorded steps, and select the latest one while following them"
+	"Set the recorded steps, and select the latest one while following them. The slider cannot have an empty range, where Spec divides by zero, so with a single step it keeps a range of one and is disabled"
 
 	steps := aCollectionOfSteps asArray.
 	steps ifEmpty: [ ^ self ].
 	slider
 		min: steps first;
-		max: steps last.
+		max: (steps last max: steps first + 1);
+		enabled: steps size > 1.
 	stepField rangeMinimum: steps first maximum: steps last.
 	following ifTrue: [ self latest ]
 ]
