@@ -38,7 +38,7 @@ chart canvas open
 
 ### Implementation Points
 
-- The x axis goes half a step beyond the first and last steps, so that edge bars are whole and a single step still has a range. It labels at most about ten whole steps.
+- The x axis labels at most about ten whole steps. Roassal ends it at its first and last ticks, so the last step always has a tick, unlabelled when it is not one of the labelled steps. Bars sit in bands of their own, so edge bars stay whole.
 - My ticks are the chart's own default ticks, given explicit positions: adding tick decorations would draw a second, mismatched set of axes. Roassal ends each axis at its first and last ticks, so I always choose the y ticks myself, about five of them, 1, 2 or 5 times a power of ten apart, covering every value.
 - A line on the right axis is scaled so that the right axis spans the left one, and labelled by a `RSVerticalRightTick`. `FEBStepChartAxes` keeps the axis lines at the bottom and left edges.
 - Roassal sends a click to the shape under the mouse, so every shape, and the canvas, listens to clicks. The interactions Roassal gives a canvas (dragging, scrolling, zooming, keys) are removed.
@@ -252,13 +252,13 @@ FEBStepChart >> draw [
 	chart title: title.
 	self addPlotsTo: chart.
 	steps ifNotEmpty: [
-			chart
-				minChartValueX: steps first - 0.5;
-				maxChartValueX: steps last + 0.5.
+			"Roassal ends the x axis at its last tick: tick the last step, without a label if it is not one of the steps labelled"
 			xTicks := self xTickValues.
-			chart
-				xTicks: xTicks
-				labels: (xTicks collect: [ :each | each printString ]) ].
+			xTicks := (xTicks copyWithout: steps last) , { steps last }.
+			chart xTicks: xTicks labels: (xTicks collect: [ :each |
+					 (self xTickValues includes: each)
+						 ifTrue: [ each printString ]
+						 ifFalse: [ '' ] ]) ].
 	yTicks := self yTickValues.
 	chart
 		minChartValueY: yTicks first;
@@ -554,6 +554,16 @@ FEBStepChart >> valuesOf: aName [
 FEBStepChart >> whenStepClickedDo: aBlock [
 
 	stepClickedBlocks add: aBlock
+]
+
+{ #category : 'accessing' }
+FEBStepChart >> xLimits [
+	"The first and last steps of my drawn x axis"
+
+	self canvas.
+	^ {
+		  chart minChartValueX.
+		  chart maxChartValueX }
 ]
 
 { #category : 'accessing' }
