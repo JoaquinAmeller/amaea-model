@@ -181,16 +181,32 @@ FEBStepNavigator >> steps [
 
 { #category : 'accessing' }
 FEBStepNavigator >> steps: aCollectionOfSteps [
-	"Set the recorded steps, and select the latest one while following them. The slider cannot have an empty range, where Spec divides by zero, so with a single step it keeps a range of one and is disabled"
+	"Set the recorded steps, and select the latest one while following them"
 
 	steps := aCollectionOfSteps asArray.
 	steps ifEmpty: [ ^ self ].
-	slider
-		min: steps first;
-		max: (steps last max: steps first + 1);
-		enabled: steps size > 1.
+	self updateSliderRange.
 	stepField rangeMinimum: steps first maximum: steps last.
 	following ifTrue: [ self latest ]
+]
+
+{ #category : 'private' }
+FEBStepNavigator >> updateSliderRange [
+	"Spec divides by zero when the slider's range is empty, even for a moment while its bounds change. So the range is at least one step, the bounds change in an order that never makes it empty, and the slider is disabled while there is only one step to choose"
+
+	| min max |
+	min := steps first.
+	max := steps last max: min + 1.
+	min >= slider max
+		ifTrue: [
+				slider
+					max: max;
+					min: min ]
+		ifFalse: [
+				slider
+					min: min;
+					max: max ].
+	slider enabled: steps size > 1
 ]
 
 { #category : 'events' }
