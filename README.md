@@ -13,7 +13,7 @@ To install this model into a fresh Pharo image open the Playground (Ctrl+OP) and
 ```st
 "Install Cormas"
 Metacello new
-    repository: 'github://cormas/cormas:v0.98';
+    repository: 'github://cormas/cormas:dev';
     baseline: 'Cormas';
     load.
 
