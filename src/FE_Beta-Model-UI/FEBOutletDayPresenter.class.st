@@ -7,6 +7,8 @@ I show one day of an outlet's history: its sales, and for each food category its
 - List each food category with its price, restock, sales, spoiled food and stock in and out of the fridge and in its last day.
 - Sum the stock, and the part in its last day, on the food table's title line.
 
+Double-clicking a sale, or choosing it in its context menu, opens its household's dashboard on the same step. In the inspector only the menu works (backlog entry 14).
+
 ## Collaborators:
 
 - `FEBOutlet`: its prices and the model's food categories.
@@ -44,6 +46,16 @@ Class {
 	#category : 'FE_Beta-Model-UI',
 	#package : 'FE_Beta-Model-UI'
 }
+
+{ #category : 'initialization' }
+FEBOutletDayPresenter >> connectPresenters [
+	"Double-clicking a sale, or choosing it in its menu, opens its household's dashboard on the same step. The menu also works in the inspector, where double-clicks are lost (backlog entry 14)"
+
+	salesTable
+		whenActivatedDo: [ :selection |
+			self openHouseholdDashboardOf: selection selectedItem ];
+		contextMenu: [ self saleMenu ]
+]
 
 { #category : 'accessing' }
 FEBOutletDayPresenter >> day [
@@ -131,10 +143,32 @@ FEBOutletDayPresenter >> initializePresenters [
 	stockLabel := self newLabel
 ]
 
+{ #category : 'opening' }
+FEBOutletDayPresenter >> openHouseholdDashboardOf: aSale [
+
+	^ FEBHouseholdDashboard openOn: aSale household atStep: day step
+]
+
 { #category : 'accessing' }
 FEBOutletDayPresenter >> restockedOf: aCategory [
 
 	^ day restock occurrencesOf: aCategory
+]
+
+{ #category : 'menus' }
+FEBOutletDayPresenter >> saleMenu [
+	"A menu opening the dashboard of the selected sale's household, empty when no sale is selected"
+
+	| menu sale |
+	menu := self newMenu.
+	sale := salesTable selectedItem ifNil: [ ^ menu ].
+	menu addItem: [ :item |
+			item
+				name:
+					'Open the dashboard of Household '
+					, sale household id printString;
+				action: [ self openHouseholdDashboardOf: sale ] ].
+	^ menu
 ]
 
 { #category : 'accessing' }

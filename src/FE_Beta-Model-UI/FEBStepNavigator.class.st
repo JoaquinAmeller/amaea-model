@@ -6,14 +6,15 @@ I let the user choose one of the recorded time steps of an entity: one step back
 - Know the recorded steps and the one selected, and keep my slider and step field showing it.
 - Move to the previous, next or latest step, and refuse steps that were not recorded.
 - Tell my listeners when the selected step changes.
+- Follow the recorded steps while the latest one is selected: new steps given by `steps:` are then selected. Choosing an earlier step stops following them, and choosing the latest, with ""Latest"" or otherwise, follows them again.
 
 ## Collaborators:
 
-- `FEBHouseholdDashboard`: gives me the recorded steps and shows the day of the step I select.
+- `FEBEntityDashboard`: gives me the recorded steps and shows the day of the step I select.
 
 ## Public API and Key Messages
 
-- `steps:` sets the recorded steps and selects the latest one.
+- `steps:` sets the recorded steps and selects the latest one while following them; `isFollowing`.
 - `selectStep:`, `previous`, `next`, `latest`, and `selectedStep`.
 - `whenStepChangedDo:` registers a block called with the newly selected step.
 
@@ -28,7 +29,7 @@ navigator previous ""traces 9""
 ## Internal Representation
 
 - `steps`: an Array of Integers in increasing order; `selectedStep`: one of them, or nil when there is none.
-- `stepChangedBlocks`: the listeners' blocks.
+- `stepChangedBlocks`: the listeners' blocks; `following`: whether new steps are selected as they are recorded.
 
 ### Implementation Points
 
@@ -45,7 +46,8 @@ Class {
 		'slider',
 		'stepField',
 		'latestButton',
-		'stepChangedBlocks'
+		'stepChangedBlocks',
+		'following'
 	],
 	#category : 'FE_Beta-Model-UI',
 	#package : 'FE_Beta-Model-UI'
@@ -78,6 +80,7 @@ FEBStepNavigator >> initialize [
 
 	steps := #(  ).
 	stepChangedBlocks := OrderedCollection new.
+	following := true.
 	super initialize
 ]
 
@@ -108,6 +111,13 @@ FEBStepNavigator >> initializePresenters [
 		             yourself
 ]
 
+{ #category : 'testing' }
+FEBStepNavigator >> isFollowing [
+	"Whether I select each step as soon as it is recorded"
+
+	^ following
+]
+
 { #category : 'actions' }
 FEBStepNavigator >> latest [
 
@@ -132,10 +142,11 @@ FEBStepNavigator >> previous [
 
 { #category : 'actions' }
 FEBStepNavigator >> selectStep: aStep [
-	"Select aStep if it was recorded, show it, and tell the listeners"
+	"Select aStep if it was recorded, show it, and tell the listeners. Selecting the latest step follows the steps recorded next; selecting an earlier one stops following them"
 
-	(aStep = selectedStep or: [ (steps includes: aStep) not ]) ifTrue: [
-		^ self ].
+	(steps includes: aStep) ifFalse: [ ^ self ].
+	following := aStep = steps last.
+	aStep = selectedStep ifTrue: [ ^ self ].
 	selectedStep := aStep.
 	slider value: aStep.
 	stepField number: aStep.
@@ -168,7 +179,7 @@ FEBStepNavigator >> steps [
 
 { #category : 'accessing' }
 FEBStepNavigator >> steps: aCollectionOfSteps [
-	"Set the recorded steps and select the latest one"
+	"Set the recorded steps, and select the latest one while following them"
 
 	steps := aCollectionOfSteps asArray.
 	steps ifEmpty: [ ^ self ].
@@ -176,7 +187,7 @@ FEBStepNavigator >> steps: aCollectionOfSteps [
 		min: steps first;
 		max: steps last.
 	stepField rangeMinimum: steps first maximum: steps last.
-	self latest
+	following ifTrue: [ self latest ]
 ]
 
 { #category : 'events' }

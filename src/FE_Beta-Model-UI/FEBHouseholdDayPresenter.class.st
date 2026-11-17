@@ -7,6 +7,8 @@ I show one day of a household's history: its meals, its indicators, its purchase
 - List the day's indicators with their score and level, coloured like the model's perspectives.
 - List the purchases with the money and time spent, the spoiled food, and the stock with the fridge's use.
 
+Double-clicking a purchase, or choosing it in its context menu, opens its outlet's dashboard on the same step. In the inspector only the menu works (backlog entry 14).
+
 ## Collaborators:
 
 - `FEBHousehold`: computes shares, indicators, levels and colours for any of its days.
@@ -71,6 +73,16 @@ FEBHouseholdDayPresenter >> colorOfPreferenceOf: aCategory [
 	(household isPreferenceFor: aCategory fulfilledOn: day) ifTrue: [
 		^ nil ].
 	^ household colorOfLevel: #hungry
+]
+
+{ #category : 'initialization' }
+FEBHouseholdDayPresenter >> connectPresenters [
+	"Double-clicking a purchase, or choosing it in its menu, opens its outlet's dashboard on the same step. The menu also works in the inspector, where double-clicks are lost (backlog entry 14)"
+
+	purchasesTable
+		whenActivatedDo: [ :selection |
+			self openOutletDashboardOf: selection selectedItem ];
+		contextMenu: [ self purchaseMenu ]
 ]
 
 { #category : 'accessing' }
@@ -305,6 +317,12 @@ FEBHouseholdDayPresenter >> mealsTable [
 	^ mealsTable
 ]
 
+{ #category : 'opening' }
+FEBHouseholdDayPresenter >> openOutletDashboardOf: aPurchase [
+
+	^ FEBOutletDashboard openOn: aPurchase outlet atStep: day step
+]
+
 { #category : 'private' }
 FEBHouseholdDayPresenter >> percentTextOf: aFraction [
 	"A fraction as a percentage, whole when it is, else to one decimal: 3/10 is 30%, 1/30 is 3.3%"
@@ -325,6 +343,21 @@ FEBHouseholdDayPresenter >> preferenceTextOf: aCategory [
 				   at: aCategory
 				   ifAbsent: [ 0 ]).
 			  (self percentTextOf: (household preferenceOf: aCategory)) }
+]
+
+{ #category : 'menus' }
+FEBHouseholdDayPresenter >> purchaseMenu [
+	"A menu opening the dashboard of the selected purchase's outlet, empty when no purchase is selected"
+
+	| menu purchase |
+	menu := self newMenu.
+	purchase := purchasesTable selectedItem ifNil: [ ^ menu ].
+	menu addItem: [ :item |
+			item
+				name:
+					'Open the dashboard of Outlet ' , purchase outlet id printString;
+				action: [ self openOutletDashboardOf: purchase ] ].
+	^ menu
 ]
 
 { #category : 'accessing' }

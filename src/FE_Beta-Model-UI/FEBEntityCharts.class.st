@@ -80,6 +80,17 @@ FEBEntityCharts >> days [
 	^ entity history days
 ]
 
+{ #category : 'showing series' }
+FEBEntityCharts >> hideSeriesHiddenIn: someEntityCharts [
+	"Hide the series hidden in the charts of the same titles in someEntityCharts, such as the charts I replace"
+
+	someEntityCharts charts do: [ :old |
+			| new |
+			new := self chartTitled: old title.
+			(old seriesNames reject: [ :each | old isShowing: each ]) do: [
+				:each | new toggleSeries: each ] ]
+]
+
 { #category : 'initialization' }
 FEBEntityCharts >> initializeEntity: anEntity [
 
