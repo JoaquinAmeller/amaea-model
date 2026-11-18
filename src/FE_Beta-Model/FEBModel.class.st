@@ -111,7 +111,7 @@ FEBModel >> initBigGridScenario [
 FEBModel >> initCustomizable [
 
 	<init>
-	<perspective: #perspectiveSatietyAndOutletImages>
+	<perspective: #perspectiveSatiety>
 	| plots |
 	self
 		createGridNumberOfRows: 6
@@ -131,7 +131,7 @@ FEBModel >> initCustomizable [
 FEBModel >> initUnconstraintedScenario [
 
 	<init>
-	<perspective: #perspectiveSatietyAndOutletImages>
+	<perspective: #perspectiveSatiety>
 	| plots |
 	"Model parameters"
 	numberOfHouseholds := 2.
@@ -456,15 +456,6 @@ FEBModel >> perspectiveSatiety [
 	<perspective>
 	^ CMPerspective new
 		  show: FEBHousehold as: #aspectSatietyIndicator:;
-		  yourself
-]
-
-{ #category : 'perspectives' }
-FEBModel >> perspectiveSatietyAndOutletImages [
-
-	<perspective>
-	^ self perspectiveSatiety
-		  show: FEBOutlet as: #aspectImage:;
 		  yourself
 ]
 

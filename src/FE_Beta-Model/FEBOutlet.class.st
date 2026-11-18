@@ -27,24 +27,14 @@ FEBOutlet class >> restockAmount: anObject [
 	restockAmount := anObject
 ]
 
-{ #category : 'as yet unclassified' }
-FEBOutlet >> aspectDefault: look [
-	<aspect>
-	
-	look
-		color: Color gray;
-		shape: #square;
-		size: 1
-]
-
 { #category : 'aspects' }
-FEBOutlet >> aspectImage: look [
+FEBOutlet >> aspectDefault: look [
 
 	<aspect>
 	look
-		tile: #outlet;
+		image: 'outlet';
 		shape: #square;
-		size: 1
+		size: 0.8
 ]
 
 { #category : 'history' }
@@ -80,16 +70,6 @@ FEBOutlet >> initializePrices [
 FEBOutlet >> inventorySize [
 
 	^ inventory totalQuantity 
-]
-
-{ #category : 'as yet unclassified' }
-FEBOutlet >> pov [
-	<pov>
-	
-	^ CMPointOfView
-		color: Color gray
-		shape: #square 
-		size: 1
 ]
 
 { #category : 'as yet unclassified' }

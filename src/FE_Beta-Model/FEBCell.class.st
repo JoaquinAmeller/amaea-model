@@ -8,8 +8,16 @@ Class {
 	#package : 'FE_Beta-Model'
 }
 
-{ #category : 'accessing' }
+{ #category : 'aspects' }
 FEBCell >> aspectDefault: look [ 
+	<aspect>
+	look
+		image: 'grass';
+		borderThickness: 0
+]
+
+{ #category : 'aspects' }
+FEBCell >> aspectWhite: look [ 
 	<aspect>
 	look color: Color white
 ]
@@ -26,14 +34,6 @@ FEBCell >> initialize [
 FEBCell >> isEmpty [
 
 	^ state = #empty
-]
-
-{ #category : 'accessing' }
-FEBCell >> pov [ 
-
-	<pov>
-	
-	state = #empty ifTrue: [ ^ CMPointOfView color: Color white ].
 ]
 
 { #category : 'accessing' }

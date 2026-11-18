@@ -149,46 +149,40 @@ FEBHousehold >> addStorageNeedsToTheShoppingList: aShoppingList [
 	self substitutePerishableFoodThatWontFitInFridge: aShoppingList
 ]
 
-{ #category : 'pov' }
+{ #category : 'aspects' }
 FEBHousehold >> aspectCaloricAdequacyIndicator: look [
 	<aspect>
-	
+	self aspectDefault: look.
+	look image: (self householdImageColored: self caloricAdequacyColor)
+]
+
+{ #category : 'aspects' }
+FEBHousehold >> aspectDefault: look [
+	<aspect>
 	look
-		color: self caloricAdequacyColor;
-		shape: self shapeOfPovBasedOnStrategy;
-		size: self sizeOfPovBasedOnHouseholdSize
+		size: self sizeOfPovBasedOnHouseholdSize;
+		shape: #square
 ]
 
 { #category : 'aspects' }
 FEBHousehold >> aspectHealthyDiet: look [
-
 	<aspect>
-	look
-		color: (self isHavingHealthyDiet
-				 ifTrue: [ CMColor green ]
-				 ifFalse: [ CMColor red ]);
-		shape: self shapeOfPovBasedOnStrategy;
-		size: self sizeOfPovBasedOnHouseholdSize
+	self aspectDefault: look.
+	look image: (self householdImageColored: self healthyDietColor)
 ]
 
 { #category : 'aspects' }
 FEBHousehold >> aspectProteinAdequacyIndicator: look [
-
 	<aspect>
-	look
-		color: self proteinAdequacyColor;
-		shape: self shapeOfPovBasedOnStrategy;
-		size: self sizeOfPovBasedOnHouseholdSize
+	self aspectDefault: look.
+	look image: (self householdImageColored: self proteinAdequacyColor)
 ]
 
 { #category : 'aspects' }
 FEBHousehold >> aspectSatietyIndicator: look [
-
 	<aspect>
-	look
-		color: self satietyIndicatorColor;
-		shape: self shapeOfPovBasedOnStrategy;
-		size: self sizeOfPovBasedOnHouseholdSize
+	self aspectDefault: look.
+	look image: (self householdImageColored: self satietyIndicatorColor)
 ]
 
 { #category : 'as yet unclassified' }
@@ -261,7 +255,7 @@ FEBHousehold >> buildShoppingList [
 	
 ]
 
-{ #category : 'accessing' }
+{ #category : 'colors' }
 FEBHousehold >> caloricAdequacyColor [
 
 	history isEmpty ifTrue: [ ^ CMColor gray ].
@@ -499,10 +493,26 @@ FEBHousehold >> hasPreferredFoodForOneDay [
 		  (inventory quantityLeftTomorrowInCategory: each key) >= each value ]
 ]
 
+{ #category : 'colors' }
+FEBHousehold >> healthyDietColor [
+
+	^ self isHavingHealthyDiet
+		ifTrue: [ CMColor green ]
+		ifFalse: [ CMColor red ]
+]
+
 { #category : 'history' }
 FEBHousehold >> history [
 
 	^ history
+]
+
+{ #category : 'aspects' }
+FEBHousehold >> householdImageColored: aColor [
+	| image |
+	image := CMImage named: 'household'.
+	image tint: (aColor alpha: 0.6).
+	^ image
 ]
 
 { #category : 'accessing' }
@@ -726,51 +736,6 @@ FEBHousehold >> outlets: aCollection [
 	outlets := aCollection
 ]
 
-{ #category : 'pov' }
-FEBHousehold >> povCaloricAdequacyIndicator [
-	<pov>
-	
-	^ CMPointOfView
-		color: self caloricAdequacyColor 
-		shape: self shapeOfPovBasedOnStrategy
-		size: self sizeOfPovBasedOnHouseholdSize
-]
-
-{ #category : 'pov' }
-FEBHousehold >> povHealthyDiet [
-	<pov>
-	| color |
-
-	self isHavingHealthyDiet
-		ifTrue: [ color := CMColor green ]
-		ifFalse: [ color := CMColor red ].
-
-	^ CMPointOfView
-		color: color
-		shape: self shapeOfPovBasedOnStrategy
-		size: self sizeOfPovBasedOnHouseholdSize
-]
-
-{ #category : 'pov' }
-FEBHousehold >> povProteinAdequacyIndicator [
-	<pov>
-	
-	^ CMPointOfView
-		color: self proteinAdequacyColor 
-		shape: self shapeOfPovBasedOnStrategy
-		size: self sizeOfPovBasedOnHouseholdSize
-]
-
-{ #category : 'pov' }
-FEBHousehold >> povSatietyIndicator [
-	<pov>
-	
-	^ CMPointOfView
-		color: self satietyIndicatorColor 
-		shape: self shapeOfPovBasedOnStrategy
-		size: self sizeOfPovBasedOnHouseholdSize
-]
-
 { #category : 'indicators' }
 FEBHousehold >> preferenceDifferenceOf: aCategory on: aDay [
 	"Answer the share of the daily need eaten of aCategory that day, less the household's preference for it: negative when it ate less than it prefers"
@@ -796,7 +761,7 @@ FEBHousehold >> preferenceRankOf: aCategory [
 		  ifAbsent: [ foodPreferenceProportions size + 1 ]
 ]
 
-{ #category : 'accessing' }
+{ #category : 'colors' }
 FEBHousehold >> proteinAdequacyColor [
 
 	history isEmpty ifTrue: [ ^ CMColor gray ].
@@ -876,7 +841,7 @@ FEBHousehold >> resetRemainingTimeAndMoney [
 	remainingMoney := availableMoneyPerStep.
 ]
 
-{ #category : 'accessing' }
+{ #category : 'colors' }
 FEBHousehold >> satietyIndicatorColor [
 
 	history isEmpty ifTrue: [ ^ CMColor gray ].
