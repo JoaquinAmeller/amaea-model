@@ -1,0 +1,13 @@
+flowchart TB
+    S["6 scenarios × seeds 1–10<br/>(the same seed places the same households in every scenario)"]
+    I["CMSimulation: init method, randomSeed, initializeSimulation"]
+    W["Steps 1–30: warm-up, not measured<br/>(shelf life of staple and processed food)"]
+    R["Steps 31–90: probes read after every step"]
+    RM["Run means<br/>11 probes averaged over 60 steps"]
+    HM["Household means<br/>satiety · protein adequacy · diet diversity over days 31–90<br/>+ walk to the nearest outlet + household size"]
+    T1["Tables and Figure 21<br/>mean of 10 runs ± 95 % interval"]
+    T2["Tables and Figures 22–23<br/>1 000 households per scenario,<br/>correlation within each run, bands of distance and size"]
+
+    S --> I --> W --> R
+    R --> RM --> T1
+    R --> HM --> T2

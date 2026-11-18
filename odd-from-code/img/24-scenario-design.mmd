@@ -1,0 +1,21 @@
+flowchart LR
+    B["<b>initBaseline</b><br/>40 outlets anywhere<br/>restock 100 each<br/>supply 4 000 ≈ 1.13 × demand"]
+
+    subgraph A["Availability: same outlets, other restock"]
+        direction TB
+        AB["<b>initAbundantSupply</b><br/>restock 200<br/>supply 8 000 ≈ 2.3 ×"]
+        AS["<b>initScarceSupply</b><br/>restock 60<br/>supply 2 400 ≈ 0.68 ×"]
+    end
+
+    subgraph P["Proximity: same supply, other outlets"]
+        direction TB
+        PN["<b>initNearOutlets</b><br/>100 outlets anywhere<br/>restock 40"]
+        PU["<b>initUnequalDistance</b><br/>40 outlets in the west half<br/>restock 100"]
+        PD["<b>initFoodDesert</b><br/>10 outlets in the north-west 10 × 10 corner<br/>restock 400"]
+    end
+
+    B --> A
+    B --> P
+
+    C["<b>Shared by all</b><br/>30 × 30 grid · 100 households of 2–5 people<br/>budget 200 / household / day · 2 h / day · fridge 20 meals<br/>3 preference profiles shared equally · price 5 per meal"]
+    C -.- B

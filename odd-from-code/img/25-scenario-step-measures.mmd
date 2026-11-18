@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant S as Cormas simulation
+    participant M as FEBModel
+    participant H as Households (random order)
+    participant O as Outlets (random order)
+    participant P as Probes
+    S->>M: step
+    M->>M: delete yesterday's trip legs<br/>(they leave their FEBTrip)
+    loop each household
+        M->>H: step
+        Note over H: eat (meals recorded → missing meals, diet diversity)<br/>shop: one FEBTripLeg per walk, added to its FEBTrip<br/>(time and money recorded → shopping minutes, budget share)
+    end
+    M->>M: outletStockouts := countStockouts<br/>(after shopping, before restocking)
+    loop each outlet
+        M->>O: step
+        Note over O: restock, age food, record end of day
+    end
+    S->>P: read probes
+    Note over P: missing meals · diet diversity · outlet stockouts<br/>minutes to the first outlet · outlets visited (trip legs)<br/>shopping minutes · share of budget spent
