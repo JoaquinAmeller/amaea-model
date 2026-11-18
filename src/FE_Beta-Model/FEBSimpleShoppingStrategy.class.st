@@ -76,23 +76,33 @@ FEBSimpleShoppingStrategy >> can: aHousehold travelFor: aTime with: aShoppingLis
 	^ aTime <= remainingTime 
 ]
 
-{ #category : 'as yet unclassified' }
+{ #category : 'shopping' }
 FEBSimpleShoppingStrategy >> shopFor: aHousehold using: aShoppingList [
+	"Walk from home to the closest outlet not visited yet, again and again, while there is something to buy and time to get there. Each walk is a leg of the trip, from home or the previous outlet to the next one"
 
-	| outlet currentCell timeToTravel unvisitedOutlets |
+	| outlet currentCell previousStop timeToTravel unvisitedOutlets |
 	unvisitedOutlets := aHousehold outlets copy.
 	currentCell := aHousehold cell.
-	
-	 [ unvisitedOutlets isNotEmpty and: [ aShoppingList hasAnyNeeds ] ] whileTrue: [ 
-		outlet := self unvisitedOutletClosestTo: currentCell from: unvisitedOutlets.
-		timeToTravel := currentCell timeToTravelTo: outlet cell.
-		
-		(self can: aHousehold travelFor: timeToTravel with: aShoppingList) ifFalse: [ 
-			^ self ].
-		
-		currentCell := outlet cell.
-		unvisitedOutlets remove: outlet.
-		aHousehold remainingTime: aHousehold remainingTime - timeToTravel.
-		
-		self buyAt: outlet for: aHousehold using: aShoppingList ]
+	previousStop := aHousehold.
+
+	[ unvisitedOutlets isNotEmpty and: [ aShoppingList hasAnyNeeds ] ]
+		whileTrue: [
+				outlet := self
+					          unvisitedOutletClosestTo: currentCell
+					          from: unvisitedOutlets.
+				timeToTravel := currentCell timeToTravelTo: outlet cell.
+
+				(self can: aHousehold travelFor: timeToTravel with: aShoppingList)
+					ifFalse: [ ^ self ].
+
+				aHousehold trip add: (aHousehold cormasModel
+						 newEntity: FEBTripLeg
+						 from: previousStop
+						 to: outlet).
+				previousStop := outlet.
+				currentCell := outlet cell.
+				unvisitedOutlets remove: outlet.
+				aHousehold remainingTime: aHousehold remainingTime - timeToTravel.
+
+				self buyAt: outlet for: aHousehold using: aShoppingList ]
 ]

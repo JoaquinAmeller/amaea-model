@@ -296,6 +296,22 @@ FEBShoppingTripTest >> testAMoneySaverSpendsLessMoneyOnStorageThanATimeSaver [
 ]
 
 { #category : 'tests' }
+FEBShoppingTripTest >> testANewDayStartsWithoutYesterdaysTrips [
+	"Yesterday the household bought food for 6 days, so today it stays home"
+
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: stapleFood.
+	household goShopping.
+	self deny: (model entitiesOfClass: FEBTripLeg) isEmpty.
+	model step.
+	self assert: (model entitiesOfClass: FEBTripLeg) isEmpty
+]
+
+{ #category : 'tests' }
 FEBShoppingTripTest >> testAPurchaseIsRecordedTheSameWayByTheHouseholdAndTheOutlet [
 	"The household buys today's 10 meals and 50 for storage, in two purchases"
 
@@ -351,6 +367,29 @@ FEBShoppingTripTest >> testATimeSaverSpendsLessTimeStockingUpThanAMoneySaver [
 
 	self assert: (self walksAnHourToStockUpWith: #beMoneySaver).
 	self deny: (self walksAnHourToStockUpWith: #beTimeSaver)
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testAnOutletOutOfReachIsNotOnTheTrip [
+	"The first outlet is 60 minutes away and has little food. The second is another 120 minutes from the first, more than the 60 minutes left"
+
+	| first |
+	self giveMoney: 1000.
+	first := self
+		         outletAt: 1
+		         at: 13
+		         stocking: 4
+		         of: stapleFood.
+	self
+		outletAt: 25
+		at: 1
+		stocking: 100
+		of: stapleFood.
+	household goShopping.
+	self
+		assert:
+		(household allDownstreamEntitiesLinkedBy: FEBTripLeg) asArray
+		equals: { first }
 ]
 
 { #category : 'tests' }
@@ -533,6 +572,21 @@ FEBShoppingTripTest >> testGoesShoppingWhenItLacksItsPreferredFood [
 ]
 
 { #category : 'tests' }
+FEBShoppingTripTest >> testHighlightingTheTripOfAHouseholdUnhighlightsTheOthers [
+
+	| other |
+	other := model
+		         newEntity: FEBHousehold
+		         locatedAt: (model cellAt: 30 at: 30).
+	household highlightTrip.
+	self assert: household trip isHighlighted.
+	self deny: other trip isHighlighted.
+	other highlightTrip.
+	self deny: household trip isHighlighted.
+	self assert: other trip isHighlighted
+]
+
+{ #category : 'tests' }
 FEBShoppingTripTest >> testKeepsAMoneyReserveWhenBuyingForStorage [
 	"It has today's food, so it only buys for storage, and keeps the share of its 100 that its strategy holds back"
 
@@ -705,6 +759,66 @@ FEBShoppingTripTest >> testStopsShoppingOnceItHasEverythingItNeeds [
 	household goShopping.
 
 	self assert: (self inventoryOf: far) totalQuantity equals: 100
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testTheLegsOfTodaysWalkMakeUpTheTripOfTheHousehold [
+
+	| legs |
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 4
+		of: stapleFood.
+	self
+		outletAt: 1
+		at: 6
+		stocking: 4
+		of: stapleFood.
+	household goShopping.
+	legs := model entitiesOfClass: FEBTripLeg.
+	self assert: legs size equals: 2.
+	self assert: household trip links asArray equals: legs asArray
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testTheTripGoesFromHomeToEachVisitedOutletInTurn [
+	"Each outlet has only 4 of the 60 meals the household needs, so it walks to both, the closest first"
+
+	| near far |
+	self giveMoney: 1000.
+	near := self
+		        outletAt: 1
+		        at: 3
+		        stocking: 4
+		        of: stapleFood.
+	far := self
+		       outletAt: 1
+		       at: 6
+		       stocking: 4
+		       of: stapleFood.
+	household goShopping.
+	self
+		assert: (household nextEntitiesLinkedBy: FEBTripLeg) asArray
+		equals: { near }.
+	self
+		assert: (near nextEntitiesLinkedBy: FEBTripLeg) asArray
+		equals: { far }.
+	self assert: (far nextEntitiesLinkedBy: FEBTripLeg) isEmpty
+]
+
+{ #category : 'tests' }
+FEBShoppingTripTest >> testUnhighlightingLeavesNoTripHighlighted [
+
+	| other |
+	other := model
+		         newEntity: FEBHousehold
+		         locatedAt: (model cellAt: 30 at: 30).
+	household highlightTrip.
+	other unhighlightTrip.
+	self deny: household trip isHighlighted.
+	self deny: other trip isHighlighted
 ]
 
 { #category : 'tests' }

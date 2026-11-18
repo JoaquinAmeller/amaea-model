@@ -16,7 +16,8 @@ Class {
 		'strategy',
 		'shoppingStrategy',
 		'dailyNeed',
-		'history'
+		'history',
+		'trip'
 	],
 	#classInstVars : [
 		'minHouseholdSize',
@@ -500,6 +501,15 @@ FEBHousehold >> healthyDietColor [
 	^ self isHavingHealthyDiet
 		ifTrue: [ CMColor green ]
 		ifFalse: [ CMColor red ]
+]
+
+{ #category : 'actions' }
+FEBHousehold >> highlightTrip [
+	"Highlight my trip, which hides the others"
+
+	<action>
+	self unhighlightTrip.
+	self trip highlight
 ]
 
 { #category : 'history' }
@@ -1001,6 +1011,25 @@ FEBHousehold >> totalUsableFoodQuantity [
 	^ inventory nonExpiredBatches
 		sum: [ :each | each quantity ]
 		ifEmpty: [ 0 ]
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> trip [
+	"Answer the network of the legs I walked today. It lasts from day to day, so that it stays highlighted, while its legs change"
+
+	^ trip ifNil: [
+			  trip := (self cormasModel newEntity: FEBTrip)
+				          household: self;
+				          yourself ]
+]
+
+{ #category : 'actions' }
+FEBHousehold >> unhighlightTrip [
+	"Leave no trip highlighted, which shows them all"
+
+	<action>
+	(self cormasModel entitiesOfClass: FEBTrip) do: [ :each |
+		each unhighlight ]
 ]
 
 { #category : 'as yet unclassified' }

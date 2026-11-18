@@ -429,6 +429,7 @@ FEBModel >> perspectiveCaloricAdequacy [
 	<perspective>
 	^ CMPerspective new
 		  show: FEBHousehold as: #aspectCaloricAdequacyIndicator:;
+		  hide: FEBTrip;
 		  yourself
 ]
 
@@ -438,6 +439,7 @@ FEBModel >> perspectiveHealthyDiet [
 	<perspective>
 	^ CMPerspective new
 		  show: FEBHousehold as: #aspectHealthyDiet:;
+		  hide: FEBTrip;
 		  yourself
 ]
 
@@ -447,6 +449,7 @@ FEBModel >> perspectiveProteinAdequacy [
 	<perspective>
 	^ CMPerspective new
 		  show: FEBHousehold as: #aspectProteinAdequacyIndicator:;
+		  hide: FEBTrip;
 		  yourself
 ]
 
@@ -456,13 +459,16 @@ FEBModel >> perspectiveSatiety [
 	<perspective>
 	^ CMPerspective new
 		  show: FEBHousehold as: #aspectSatietyIndicator:;
+		  hide: FEBTrip;
 		  yourself
 ]
 
 { #category : 'as yet unclassified' }
 FEBModel >> step [
+	"A new day forgets yesterday's shopping trips, so that only today's are shown"
 
 	<control>
+	(self entitiesOfClass: FEBTripLeg) copy do: [ :each | each delete ].
 	(self shuffled: self @@ FEBHousehold) do: #step.
 	(self shuffled: self @@ FEBOutlet) do: #step
 ]
