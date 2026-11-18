@@ -121,8 +121,6 @@ FEBModel >> initCustomizable [
 
 	plots := self @@ FEBCell.
 
-	FEBOutlet restockAmount: 3000.
-
 	self initializeFoodCategories.
 	self initializeAgents
 ]
