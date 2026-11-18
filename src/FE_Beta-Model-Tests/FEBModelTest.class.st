@@ -286,6 +286,19 @@ FEBModelTest >> testHouseholdsNeedTenMealsPerPersonADay [
 ]
 
 { #category : 'tests' }
+FEBModelTest >> testTheHouseholdsAreSharedEquallyAmongTheFoodPreferences [
+
+	| preferences |
+	preferences := (self bigGridModel households collect: [ :each |
+		                each foodPreference class ]) asBag.
+	self assert: preferences asSet size equals: 3.
+	self
+		assert: (preferences asSet asArray collect: [ :each |
+				 preferences occurrencesOf: each ]) sorted asArray
+		equals: #( 33 33 34 )
+]
+
+{ #category : 'tests' }
 FEBModelTest >> testTheSameRandomSeedGivesTheSameSimulation [
 
 	| first second |

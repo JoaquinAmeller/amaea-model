@@ -17,7 +17,8 @@ Class {
 		'shoppingStrategy',
 		'dailyNeed',
 		'history',
-		'trip'
+		'trip',
+		'foodPreference'
 	],
 	#classInstVars : [
 		'minHouseholdSize',
@@ -164,6 +165,14 @@ FEBHousehold >> aspectDefault: look [
 		image: 'household';
 		size: self sizeOfPovBasedOnHouseholdSize;
 		shape: #square
+]
+
+{ #category : 'aspects' }
+FEBHousehold >> aspectFoodPreference: look [
+
+	<aspect>
+	self aspectDefault: look.
+	look image: (self householdImageColored: foodPreference color)
 ]
 
 { #category : 'aspects' }
@@ -444,6 +453,12 @@ FEBHousehold >> findNonPerishableSubstitutionFor: aCategory [
 ]
 
 { #category : 'accessing' }
+FEBHousehold >> foodPreference [
+
+	^ foodPreference
+]
+
+{ #category : 'accessing' }
 FEBHousehold >> foodPreferenceProportions [
 
 	^ foodPreferenceProportions
@@ -451,18 +466,13 @@ FEBHousehold >> foodPreferenceProportions [
 
 { #category : 'accessing' }
 FEBHousehold >> foodPreferenceProportions: aDictionary [
-
-	| orderedDict |
 	"Most preferred first. Equal preferences are ordered by name, so that they keep the same order from one run to the next"
-	orderedDict := (aDictionary associations sorted: [ :a :b |
-			                a value > b value or: [
-				                a value = b value and: [ a key name <= b key name ] ] ])
-		               asOrderedDictionary.
 
-	foodPreferenceProportions := orderedDict.
-
-	"Inventory is initialized when foodPreference is set because it needs to have food for one day, and we must specify the category of that food"
-	self initializeInventory
+	foodPreferenceProportions := (aDictionary associations sorted: [ :a :b |
+			                              a value > b value or: [
+				                              a value = b value and: [
+					                              a key name <= b key name ] ] ])
+		                             asOrderedDictionary
 ]
 
 { #category : 'asserting' }
@@ -559,7 +569,11 @@ FEBHousehold >> initialize [
 	"by default households prefers to save money just to avoid it to be nil.
 	Init in the model will assign the proportions of preferences"
 	self beMoneySaver.
+	
+	"by defaukt households have a balanced diet"
+	self preferBalancedDiet.
 
+	self initializeInventory.
 	shoppingStrategy := FEBSimpleShoppingStrategy new.
 	history := FEBHistory new
 ]
@@ -568,13 +582,7 @@ FEBHousehold >> initialize [
 FEBHousehold >> initializeInventory [
 
 	inventory := FEBFoodInventory new.
-	inventory fridgeCapacity: self class fridgeCapacity.
-	
-	"Since HH consume food before buying it and then buy food for next day, they must be created with enough food for one day (the first food consumption)."
-	inventory addBatch: (FEBFoodBatch
-		category: foodPreferenceProportions orderedKeys first
-		quantity: dailyNeed
-		fridge: false).
+	inventory fridgeCapacity: self class fridgeCapacity
 ]
 
 { #category : 'accessing' }
@@ -745,6 +753,36 @@ FEBHousehold >> outlets [
 FEBHousehold >> outlets: aCollection [
 
 	outlets := aCollection
+]
+
+{ #category : 'accessing' }
+FEBHousehold >> prefer: aFoodPreference [
+	"From now on, prefer the food of aFoodPreference. The food already bought stays"
+
+	foodPreference := aFoodPreference.
+	self foodPreferenceProportions:
+		(aFoodPreference sharesIn: self cormasModel)
+]
+
+{ #category : 'actions' }
+FEBHousehold >> preferBalancedDiet [
+
+	<action>
+	self prefer: FEBBalancedDietPreference new
+]
+
+{ #category : 'actions' }
+FEBHousehold >> preferMeatAndDairy [
+
+	<action>
+	self prefer: FEBMeatAndDairyPreference new
+]
+
+{ #category : 'actions' }
+FEBHousehold >> preferStapleAndProcessedFood [
+
+	<action>
+	self prefer: FEBStapleAndProcessedFoodPreference new
 ]
 
 { #category : 'indicators' }
@@ -940,6 +978,16 @@ FEBHousehold >> store: aBatch [
 			aBatch moveOutsideFridge ].
 	inventory addBatch: aBatch.
 	^ quantityInFridge
+]
+
+{ #category : 'initialization' }
+FEBHousehold >> storeFoodForTheFirstDay [
+	"Households eat before they shop, and then buy food for the next day, so a new household starts with one day of its most preferred food"
+
+	inventory addBatch: (FEBFoodBatch
+			 category: foodPreferenceProportions orderedKeys first
+			 quantity: dailyNeed
+			 fridge: false)
 ]
 
 { #category : 'accessing' }

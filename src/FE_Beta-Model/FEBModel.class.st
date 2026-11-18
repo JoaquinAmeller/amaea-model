@@ -215,37 +215,14 @@ FEBModel >> initializeFoodCategories [
 
 { #category : 'initialization' }
 FEBModel >> initializePreferences [
+	"Share the households equally among the food preferences, at random, and give each one day of the food it prefers most"
 
-	| preferenceA preferenceB preferenceC |
-	
-	preferenceA := { "eats a lot of meat and dairy"
-		(self foodCategoryNamed: 'Animal proteins') -> 0.35 .
-		(self foodCategoryNamed: 'Fruits and vegetables') -> 0.15 .
-		(self foodCategoryNamed: 'Staple food') -> 0.15 .
-		(self foodCategoryNamed: 'Dairy') -> 0.3 .
-		(self foodCategoryNamed: 'Processed food') -> 0.05 .
-	} asDictionary.
-	
-	preferenceB := { "eats a lot of staple and processed food"
-		(self foodCategoryNamed: 'Animal proteins') -> 0.1 .
-		(self foodCategoryNamed: 'Fruits and vegetables') -> 0.1 .
-		(self foodCategoryNamed: 'Staple food') -> 0.4 .
-		(self foodCategoryNamed: 'Dairy') -> 0.1 .
-		(self foodCategoryNamed: 'Processed food') -> 0.3 .
-	} asDictionary.
-	
-	preferenceC := { "has a balanced diet"
-		(self foodCategoryNamed: 'Animal proteins') -> 0.2 .
-		(self foodCategoryNamed: 'Fruits and vegetables') -> 0.3 .
-		(self foodCategoryNamed: 'Staple food') -> 0.25 .
-		(self foodCategoryNamed: 'Dairy') -> 0.15 .
-		(self foodCategoryNamed: 'Processed food') -> 0.1 .
-	} asDictionary.
-
+	| actions |
+	actions := #( #preferMeatAndDairy #preferStapleAndProcessedFood
+	              #preferBalancedDiet ).
 	(self shuffled: self households) withIndexDo: [ :household :index |
-		index % 3 = 1 ifTrue: [ household foodPreferenceProportions: preferenceA copy ].
-		index % 3 = 2 ifTrue: [ household foodPreferenceProportions: preferenceB copy ].
-		index % 3 = 0 ifTrue: [ household foodPreferenceProportions: preferenceC copy ] ]
+			household perform: (actions at: index - 1 \\ actions size + 1).
+			household storeFoodForTheFirstDay ]
 ]
 
 { #category : 'initialization' }

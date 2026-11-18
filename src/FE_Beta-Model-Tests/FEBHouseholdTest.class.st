@@ -124,6 +124,19 @@ FEBHouseholdTest >> testAboutTwoThousandKilocaloriesAPersonIsAdequate [
 ]
 
 { #category : 'tests' }
+FEBHouseholdTest >> testChangingItsFoodPreferenceKeepsItsFood [
+	"The food bought for the old preference stays: only what the household prefers from now on changes"
+
+	household inventory addBatch:
+		(FEBFoodBatch category: stapleFood quantity: 20 fridge: false).
+	household preferBalancedDiet.
+	self assert: household inventory totalQuantity equals: 20.
+	self
+		assert: (household preferenceOf: fruitsAndVegetables)
+		equals: 3 / 10
+]
+
+{ #category : 'tests' }
 FEBHouseholdTest >> testEveryHouseholdHasExactlyOneCaloricAdequacyLevel [
 
 	0 to: 10 do: [ :meals |
