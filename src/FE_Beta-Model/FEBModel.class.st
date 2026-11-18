@@ -5,7 +5,8 @@ Class {
 		'listOfOutlets',
 		'foodCategories',
 		'numberOfHouseholds',
-		'numberOfOutlets'
+		'numberOfOutlets',
+		'outletStockouts'
 	],
 	#category : 'FE_Beta-Model',
 	#package : 'FE_Beta-Model'
@@ -38,6 +39,45 @@ FEBModel >> averageCaloricAdequacyScore [
 ]
 
 { #category : 'probes' }
+FEBModel >> averageDietDiversity [
+	"The average number of food categories a household ate today"
+
+	<probeNamed: 'Average diet diversity' color: #purple>
+	^ self averageOverHouseholds: [ :each | each dietDiversity ]
+]
+
+{ #category : 'probes' }
+FEBModel >> averageMinutesToFirstOutlet [
+	"The average walk from home to the first outlet, among households that reached one today"
+
+	<probeNamed: 'Minutes to the first outlet' color: #blue>
+	^ self
+		  averageOf: [ :each |
+				  (each cell timeToTravelTo:
+					   (each outgoingLinksOfClass: FEBTripLeg) first to cell)
+					  asMinutes ]
+		  over: self householdsThatReachedAnOutlet
+]
+
+{ #category : 'probes' }
+FEBModel >> averageNumberOfOutletsVisited [
+	"The average number of outlets visited, among households that reached one today"
+
+	<probeNamed: 'Outlets visited' color: #cyan>
+	^ self
+		  averageOf: [ :each | each trip links size ]
+		  over: self householdsThatReachedAnOutlet
+]
+
+{ #category : 'probes - private' }
+FEBModel >> averageOf: aBlock over: someHouseholds [
+
+	^ someHouseholds
+		  ifEmpty: [ 0 ]
+		  ifNotEmpty: [ (someHouseholds collect: aBlock) average asFloat ]
+]
+
+{ #category : 'probes' }
 FEBModel >> averageOverHouseholds: aBlock [
 	"Answer the average of aBlock over the households, or 0 when there are none"
 
@@ -59,6 +99,37 @@ FEBModel >> averageSatietyScore [
 
 	<probeNamed: 'Average satiety score' color: #green>
 	^ self averageOverHouseholds: [ :each | each satietyScore ]
+]
+
+{ #category : 'probes' }
+FEBModel >> averageShareOfBudgetSpent [
+	"The average share of their money spent, among households that went shopping today"
+
+	<probeNamed: 'Share of budget spent' color: #yellow>
+	^ self
+		  averageOf: [ :each |
+				  | day |
+				  day := each history lastDay.
+				  day moneySpent / day moneyAvailable ]
+		  over: self householdsThatWentShopping
+]
+
+{ #category : 'probes' }
+FEBModel >> averageShoppingMinutes [
+	"The average time spent walking to outlets, among households that went shopping today"
+
+	<probeNamed: 'Shopping minutes' color: #gray>
+	^ self
+		  averageOf: [ :each | each history lastDay timeSpent asMinutes ]
+		  over: self householdsThatWentShopping
+]
+
+{ #category : 'probes - private' }
+FEBModel >> countStockouts [
+	"Answer how many food categories the outlets have sold out, counted once per outlet"
+
+	^ self outlets inject: 0 into: [ :sum :outlet |
+		  sum + (foodCategories count: [ :each | outlet isOutOf: each ]) ]
 ]
 
 { #category : 'probes' }
@@ -84,6 +155,37 @@ FEBModel >> foodCategoryNamed: aString [
 FEBModel >> households [
 
 	^ self @@ FEBHousehold.
+]
+
+{ #category : 'probes - private' }
+FEBModel >> householdsThatReachedAnOutlet [
+
+	^ self households select: [ :each |
+		  (each outgoingLinksOfClass: FEBTripLeg) notEmpty ]
+]
+
+{ #category : 'probes - private' }
+FEBModel >> householdsThatWentShopping [
+
+	^ self households select: [ :each | each wentShoppingOnTheLastDay ]
+]
+
+{ #category : 'scenarios' }
+FEBModel >> initAbundantSupply [
+	"Supply far above demand: 8000 meals a day"
+
+	<init>
+	<perspective: #perspectiveSatiety>
+	self initScenarioWithOutlets: 40 restocking: 200 on: [ :cell | true ]
+]
+
+{ #category : 'scenarios' }
+FEBModel >> initBaseline [
+	"Supply slightly above demand: 40 outlets anywhere, 4000 meals a day for about 3500 needed"
+
+	<init>
+	<perspective: #perspectiveSatiety>
+	self initScenarioWithOutlets: 40 restocking: 100 on: [ :cell | true ]
 ]
 
 { #category : 'as yet unclassified' }
@@ -125,6 +227,60 @@ FEBModel >> initCustomizable [
 	self initializeAgents
 ]
 
+{ #category : 'scenarios' }
+FEBModel >> initFoodDesert [
+	"The baseline supply from 10 outlets in the north-west corner: households in the far corner walk 20 cells or more"
+
+	<init>
+	<perspective: #perspectiveSatiety>
+	self
+		initScenarioWithOutlets: 10
+		restocking: 400
+		on: [ :cell | cell rowNumber <= 10 and: [ cell columnNumber <= 10 ] ]
+]
+
+{ #category : 'scenarios' }
+FEBModel >> initNearOutlets [
+	"The baseline supply from 100 outlets anywhere, so that almost every household has one next to it"
+
+	<init>
+	<perspective: #perspectiveSatiety>
+	self initScenarioWithOutlets: 100 restocking: 40 on: [ :cell | true ]
+]
+
+{ #category : 'scenarios' }
+FEBModel >> initScarceSupply [
+	"Supply below demand: 2400 meals a day"
+
+	<init>
+	<perspective: #perspectiveSatiety>
+	self initScenarioWithOutlets: 40 restocking: 60 on: [ :cell | true ]
+]
+
+{ #category : 'scenarios' }
+FEBModel >> initScenarioWithOutlets: aNumber restocking: aQuantity on: aBlock [
+	"The scenarios of the experimental design: 100 households on a 30 by 30 grid, with an intermediate budget, two hours a day for shopping and a fridge for 20 meals, and aNumber outlets restocking aQuantity meals a day each, on the cells where aBlock answers true. Every parameter is set, so that no value is left over from an earlier run"
+
+	numberOfHouseholds := 100.
+	numberOfOutlets := aNumber.
+	FEBHousehold
+		minHouseholdSize: 2;
+		maxHouseholdSize: 5;
+		availableMoneyPerStep: 200;
+		availableTimePerStep: 2;
+		fridgeCapacity: 20;
+		consumptionStrategySymbol: #'No spoil weirdo'.
+	FEBOutlet restockAmount: aQuantity.
+
+	self
+		createGridNumberOfRows: 30
+		numberOfColumns: 30
+		neighbourhood: 8
+		closed: true.
+	self initializeFoodCategories.
+	self initializeAgentsWithOutletsOn: aBlock
+]
+
 { #category : 'as yet unclassified' }
 FEBModel >> initUnconstraintedScenario [
 
@@ -153,16 +309,48 @@ FEBModel >> initUnconstraintedScenario [
 	self initializeAgents
 ]
 
-{ #category : 'as yet unclassified' }
+{ #category : 'scenarios' }
+FEBModel >> initUnequalDistance [
+	"The baseline outlets, all in the west half: households in the east walk 15 cells or more"
+
+	<init>
+	<perspective: #perspectiveSatiety>
+	self
+		initScenarioWithOutlets: 40
+		restocking: 100
+		on: [ :cell | cell columnNumber <= 15 ]
+]
+
+{ #category : 'initialization' }
+FEBModel >> initialize [
+
+	super initialize.
+	outletStockouts := 0
+]
+
+{ #category : 'initialization' }
 FEBModel >> initializeAgents [
 
-	self create: numberOfHouseholds randomlyLocatedAloneEntitiesOfClass: FEBHousehold.
+	self initializeAgentsWithOutletsOn: [ :cell | true ]
+]
+
+{ #category : 'initialization' }
+FEBModel >> initializeAgentsWithOutletsOn: aBlock [
+	"Households anywhere, alone on their cell, and outlets alone on the cells where aBlock answers true"
+
+	self
+		create: numberOfHouseholds
+		randomlyLocatedAloneEntitiesOfClass: FEBHousehold.
 
 	self initializePreferences.
 	self initializeSubstitutionList.
 	self initializeStrategies.
 
-	self create: numberOfOutlets randomlyLocatedAloneEntitiesOfClass: FEBOutlet.
+	self
+		create: numberOfOutlets
+		randomlyLocatedEntitiesOfClass: FEBOutlet
+		constrainedBy: [ :cell |
+		cell hasNoOccupants and: [ aBlock value: cell ] ].
 
 	self households do: [ :each | each outlets: self outlets ]
 ]
@@ -256,6 +444,16 @@ FEBModel >> initializeSubstitutionList [
 	
 	self households do: [ :each |
 		each substitutionList: substitutionList ]
+]
+
+{ #category : 'probes' }
+FEBModel >> missingMeals [
+	"The meals households needed but could not eat today"
+
+	<probeNamed: 'Missing meals' color: #red>
+	^ self households
+		  inject: 0
+		  into: [ :sum :each | sum + each missingMeals ]
 ]
 
 { #category : 'probes' }
@@ -392,6 +590,14 @@ FEBModel >> numberOfUnsatiatedPeople [
 	^ (self households select: #isUnsatiated ) sum: #householdSize 
 ]
 
+{ #category : 'probes' }
+FEBModel >> outletStockouts [
+	"The food categories that outlets had sold out once households had shopped today, counted once per outlet"
+
+	<probeNamed: 'Outlet stockouts' color: #orange>
+	^ outletStockouts
+]
+
 { #category : 'accessing' }
 FEBModel >> outlets [
 
@@ -440,11 +646,12 @@ FEBModel >> perspectiveSatiety [
 
 { #category : 'as yet unclassified' }
 FEBModel >> step [
-	"A new day forgets yesterday's shopping trips, so that only today's are shown"
+	"A new day forgets yesterday's shopping trips, so that only today's are shown. Stockouts are counted once households have shopped, before outlets restock"
 
 	<control>
 	(self entitiesOfClass: FEBTripLeg) copy do: [ :each | each delete ].
 	(self shuffled: self @@ FEBHousehold) do: #step.
+	outletStockouts := self countStockouts.
 	(self shuffled: self @@ FEBOutlet) do: #step
 ]
 

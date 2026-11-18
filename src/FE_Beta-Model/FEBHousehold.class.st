@@ -340,6 +340,15 @@ FEBHousehold >> dailyNeed [
 	^ dailyNeed
 ]
 
+{ #category : 'indicators' }
+FEBHousehold >> dietDiversity [
+	"Answer how many food categories I ate on the latest recorded day"
+
+	history isEmpty ifTrue: [ ^ 0 ].
+	^ (history lastDay meals collect: [ :each | each category ]) asSet
+		  size
+]
+
 { #category : 'consuming' }
 FEBHousehold >> eat: aNumberOfMeals mealsFromBatch: aBatch as: aReason [
 
@@ -731,6 +740,14 @@ FEBHousehold >> mealsPerCategoryFor: aNumberOfMeals [
 	^ meals
 ]
 
+{ #category : 'indicators' }
+FEBHousehold >> missingMeals [
+	"Answer how many of the meals I needed I could not eat on the latest recorded day"
+
+	history isEmpty ifTrue: [ ^ 0 ].
+	^ dailyNeed - history lastDay meals size
+]
+
 { #category : 'as yet unclassified' }
 FEBHousehold >> moneyThreshold [
 
@@ -1086,4 +1103,10 @@ FEBHousehold >> updateHungerMemoryAfterEating: aCollectionOfCategories [
 	aCollectionOfCategories size < dailyNeed 
 		ifTrue: [ hungerMemory := hungerMemory + 1 ]
 		ifFalse: [ hungerMemory := 0 ]
+]
+
+{ #category : 'indicators' }
+FEBHousehold >> wentShoppingOnTheLastDay [
+
+	^ history isEmpty not and: [ history lastDay wentShopping ]
 ]

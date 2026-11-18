@@ -72,6 +72,12 @@ FEBOutlet >> inventorySize [
 	^ inventory totalQuantity 
 ]
 
+{ #category : 'testing' }
+FEBOutlet >> isOutOf: aCategory [
+
+	^ (inventory quantityInCategory: aCategory) = 0
+]
+
 { #category : 'as yet unclassified' }
 FEBOutlet >> pricePerUnitFor: aCategory [
 

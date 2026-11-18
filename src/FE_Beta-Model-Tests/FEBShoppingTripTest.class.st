@@ -392,6 +392,21 @@ FEBShoppingTripTest >> testAnOutletOutOfReachIsNotOnTheTrip [
 		equals: { first }
 ]
 
+{ #category : 'tests - probes' }
+FEBShoppingTripTest >> testAnOutletThatSoldAllOfACategoryIsOutOfIt [
+
+	| before |
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 4
+		of: stapleFood.
+	before := model countStockouts.
+	household goShopping.
+	self assert: model countStockouts equals: before + 1
+]
+
 { #category : 'tests' }
 FEBShoppingTripTest >> testAnOutletsDayRecordsItsSalesToEachHousehold [
 
@@ -449,6 +464,18 @@ FEBShoppingTripTest >> testBuysFoodForTodayBeforeFoodForStorage [
 
 	self assert: household inventory totalQuantity equals: 10.
 	self assert: household remainingMoney equals: 10
+]
+
+{ #category : 'tests - probes' }
+FEBShoppingTripTest >> testDietDiversityCountsTheFoodCategoriesEaten [
+
+	household foodPreferenceProportions: {
+			(stapleFood -> 0.5).
+			(animalProteins -> 0.5) } asDictionary.
+	self give: 5 of: stapleFood.
+	self give: 5 of: animalProteins.
+	household consumeFood.
+	self assert: household dietDiversity equals: 2
 ]
 
 { #category : 'tests' }
@@ -603,6 +630,15 @@ FEBShoppingTripTest >> testKeepsAMoneyReserveWhenBuyingForStorage [
 	self assert: household inventory totalQuantity > 10.
 	self assert:
 		household remainingMoney >= (100 * household moneyThreshold)
+]
+
+{ #category : 'tests - probes' }
+FEBShoppingTripTest >> testMissingMealsAreTheMealsTheHouseholdCouldNotEat [
+
+	self give: 4 of: stapleFood.
+	household consumeFood.
+	self assert: household missingMeals equals: 6.
+	self assert: model missingMeals equals: 6
 ]
 
 { #category : 'tests' }
@@ -782,6 +818,20 @@ FEBShoppingTripTest >> testTheLegsOfTodaysWalkMakeUpTheTripOfTheHousehold [
 	self assert: household trip links asArray equals: legs asArray
 ]
 
+{ #category : 'tests - probes' }
+FEBShoppingTripTest >> testTheShareOfBudgetSpentIsWhatShoppersSpentOverWhatTheyHad [
+	"60 meals at 5 each, out of 1000"
+
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 100
+		of: stapleFood.
+	household goShopping.
+	self assert: (model averageShareOfBudgetSpent closeTo: 0.3)
+]
+
 { #category : 'tests' }
 FEBShoppingTripTest >> testTheTripGoesFromHomeToEachVisitedOutletInTurn [
 	"Each outlet has only 4 of the 60 meals the household needs, so it walks to both, the closest first"
@@ -806,6 +856,27 @@ FEBShoppingTripTest >> testTheTripGoesFromHomeToEachVisitedOutletInTurn [
 		assert: (near nextEntitiesLinkedBy: FEBTripLeg) asArray
 		equals: { far }.
 	self assert: (far nextEntitiesLinkedBy: FEBTripLeg) isEmpty
+]
+
+{ #category : 'tests - probes' }
+FEBShoppingTripTest >> testTheWalkToTheFirstOutletAndTheWholeTripAreTimed [
+	"Each outlet has only 4 of the 60 meals: the household walks 10 minutes to the first and 15 more to the second"
+
+	self giveMoney: 1000.
+	self
+		outletAt: 1
+		at: 3
+		stocking: 4
+		of: stapleFood.
+	self
+		outletAt: 1
+		at: 6
+		stocking: 4
+		of: stapleFood.
+	household goShopping.
+	self assert: model averageMinutesToFirstOutlet equals: 10.
+	self assert: model averageShoppingMinutes equals: 25.
+	self assert: model averageNumberOfOutletsVisited equals: 2
 ]
 
 { #category : 'tests' }
