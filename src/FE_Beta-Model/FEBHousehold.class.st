@@ -160,6 +160,7 @@ FEBHousehold >> aspectCaloricAdequacyIndicator: look [
 FEBHousehold >> aspectDefault: look [
 	<aspect>
 	look
+		image: 'household';
 		size: self sizeOfPovBasedOnHouseholdSize;
 		shape: #square
 ]
@@ -299,12 +300,12 @@ FEBHousehold >> colorOfLevel: aLevel [
 	"Answer the colour showing an indicator's level: red when it is bad, orange when it is short, green when it is right, purple when it is too much"
 
 	(#( #hungry #severelyInadequate ) includes: aLevel) ifTrue: [
-		^ Color fromHexString: 'B85353' ].
+		^ CMColor red ].
 	(#( #unsatiated #inadequate ) includes: aLevel) ifTrue: [
-		^ Color fromHexString: 'E5A16D' ].
+		^ CMColor gold ].
 	(#( #full #adequate ) includes: aLevel) ifTrue: [
-		^ Color fromHexString: '78A882' ].
-	^ Color fromHexString: '9274B5'
+		^ CMColor green ].
+	^ CMColor purple
 ]
 
 { #category : 'consuming' }
