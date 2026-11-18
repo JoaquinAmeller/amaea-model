@@ -4,10 +4,12 @@ classDiagram
         +numberOfHouseholds : Integer
         +numberOfOutlets : Integer
         +foodCategories : OrderedCollection~FEBFoodCategory~
+        +outletStockouts : Integer
         +step()
         +initBigGridScenario()
         +initUnconstraintedScenario()
         +initCustomizable()
+        +initBaseline() and 5 scenario inits
         +probes()
     }
     class FEBCell {
@@ -17,8 +19,10 @@ classDiagram
     class FEBHousehold {
         +householdSize : Integer [2..5]
         +dailyNeed : Integer = 10 x size
+        +foodPreference : FEBFoodPreference
         +foodPreferenceProportions : OrderedDictionary
         +substitutionList : Dictionary
+        +trip : FEBTrip
         +availableMoneyPerStep : Number
         +availableTimePerStep : Duration
         +remainingMoney : Number
@@ -78,7 +82,27 @@ classDiagram
         +category
         +reason : ownShare|substitute|leftover|lastDay
     }
+    class FEBFoodPreference {
+        <<abstract>>
+        +shares() name to share
+        +sharesIn(model) Dictionary
+        +color() Color
+    }
+    class FEBTrip {
+        +household : FEBHousehold
+        +isHighlighted : Boolean
+        +links() today's legs
+    }
+    class FEBTripLeg {
+        +from : household or outlet
+        +to : outlet
+    }
     CMModel <|-- FEBModel
+    CMNetwork <|-- FEBTrip
+    CMLink <|-- FEBTripLeg
+    FEBHousehold "1" --> "1" FEBFoodPreference : prefers
+    FEBHousehold "1" --> "0..1" FEBTrip : trip
+    FEBTrip "1" o-- "*" FEBTripLeg : legs walked today
     CMAgent <|-- FEBHousehold
     CMAgent <|-- FEBOutlet
     CMCell <|-- FEBCell

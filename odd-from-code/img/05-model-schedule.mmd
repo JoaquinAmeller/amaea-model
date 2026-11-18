@@ -6,12 +6,14 @@ sequenceDiagram
     participant O as Outlets (random order)
     participant P as Probes
     S->>M: step (control method, once per time step t)
+    M->>M: delete yesterday's trip legs (FEBTripLeg)
     M->>M: shuffle households
     loop each household h
         M->>H: h step
-        Note over H: empty trashbin, eat, maybe shop,<br/>age food, record end of day
+        Note over H: empty trashbin, eat, maybe shop<br/>(one trip leg per walk to an outlet),<br/>age food, record end of day
         H-->>O: buy food (sellCategory...) at visited outlets
     end
+    M->>M: outletStockouts := countStockouts
     M->>M: shuffle outlets
     loop each outlet o
         M->>O: o step

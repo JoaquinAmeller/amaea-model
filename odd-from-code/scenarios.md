@@ -5,7 +5,7 @@ Companion to [`odd.md`](odd.md) and [`recommendations.md`](recommendations.md). 
 - **Affordability:** all foods cost the same (5 per meal), so a tighter budget only lowers quantity. It cannot cause the "substitution toward cheaper food groups" that the design asks about.
 - **Convenience:** the exploratory runs found that fridge capacity has little effect while households shop every day.
 
-Code: commit `637fbbd` of `amaea-model`, plus the uncommitted scenario inits and probes described below. **10 random seeds per scenario, 90 steps per run, measures averaged over steps 31–90** (the first 30 steps are a warm‑up, the shelf life of staple and processed food).
+Code: commit `3460a98` of `amaea-model`, which includes the scenario inits and probes described below. **10 random seeds per scenario, 90 steps per run, measures averaged over steps 31–90** (the first 30 steps are a warm‑up, the shelf life of staple and processed food).
 
 ---
 

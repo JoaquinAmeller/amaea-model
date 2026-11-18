@@ -1,6 +1,6 @@
 # AMAEA model (FE_Beta) — ODD inferred from the code
 
-This ODD (Overview, Design concepts, Details; Grimm et al. 2006, 2010, 2020) describes **the current implementation** of the AMAEA food‑environment model, as found in the repository `amaea-model` at commit `89bba54`. Everything below is inferred from the Pharo/Cormas source code (`src/FE_Beta-Model`, `src/FE_Beta-Model-UI`, `src/FE_Beta-Model-Tests`) and from Cormas methods the model calls. Nothing is taken from the external ODD or pseudocode documents linked in the README.
+This ODD (Overview, Design concepts, Details; Grimm et al. 2006, 2010, 2020) describes **the current implementation** of the AMAEA food‑environment model, as found in the repository `amaea-model` at commit `3460a98` (first written for `89bba54`, then updated for the shopping trips, the food preference classes, the experiment scenarios and their probes). Everything below is inferred from the Pharo/Cormas source code (`src/FE_Beta-Model`, `src/FE_Beta-Model-UI`, `src/FE_Beta-Model-Tests`) and from Cormas methods the model calls. Nothing is taken from the external ODD or pseudocode documents linked in the README.
 
 Where something cannot be inferred from the code, the section is left empty and marked *(not inferable from the code)*.
 
@@ -66,11 +66,15 @@ The research questions, hypotheses and intended policy uses are *(not inferable 
 | Passive object | `FEBShoppingList` | `Object` | Essential and storage needs per category, built daily by a household. |
 | Passive object | `FEBPurchase` | `Object` | One sale/purchase (shared by buyer and seller records). |
 | Passive object | `FEBMeal` | `Object` | One eaten portion with its category and reason. |
+| Link | `FEBTripLeg` | `CMLink` | One walk of today's shopping trip, from the household or an outlet to the next outlet. |
+| Network | `FEBTrip` | `CMNetwork` | The trip of one household: its legs of the day. Draws the path on the space view. |
+| Preference | `FEBFoodPreference` + 3 subclasses | `Object` | A food preference profile: the share of each category and a colour. |
 | Strategy | `FEBStrategy` + 4 subclasses | `Object` | Money and time reserve thresholds of a household. |
 | Strategy | `FEBShoppingStrategy`, `FEBSimpleShoppingStrategy` | `Object` | Shopping trip algorithm. |
 | Strategy | `FEBFoodConsumptionStrategy` + 2 subclasses | `Object` | What a household eats before its preference-based meals. |
 | Record | `FEBHistory`, `FEBDay`, `FEBHouseholdDay`, `FEBOutletDay`, `FEBStockLevel` | `Object` | Per-step records used by indicators and dashboards. |
-| Graphics | `FEBTileset` | `CMTileset` | Outlet icon. |
+
+Cells, households and outlets are drawn with the image files `grass`, `household` and `outlet` of the model's image folder (there is no tileset class any more).
 
 ![Strategy classes](img/02-strategy-classes.png)
 
@@ -84,9 +88,10 @@ The research questions, hypotheses and intended policy uses are *(not inferable 
 
 | Variable | Type | Meaning | Value / source |
 |---|---|---|---|
-| `numberOfHouseholds` | Integer, parameter 0–1000 (default 2) | Households created at init | Overwritten by `initBigGridScenario` (100) and `initUnconstraintedScenario` (2) |
-| `numberOfOutlets` | Integer, parameter 0–1000 (default 1) | Outlets created at init | Overwritten by `initBigGridScenario` (40) and `initUnconstraintedScenario` (20) |
+| `numberOfHouseholds` | Integer, parameter 0–1000 (default 2) | Households created at init | Overwritten by `initBigGridScenario` (100), `initUnconstraintedScenario` (2) and the scenario inits (100) |
+| `numberOfOutlets` | Integer, parameter 0–1000 (default 1) | Outlets created at init | Overwritten by `initBigGridScenario` (40), `initUnconstraintedScenario` (20) and the scenario inits (10–100, §5.2) |
 | `foodCategories` | OrderedCollection of 5 `FEBFoodCategory` | The food groups, in a fixed order | `initializeFoodCategories` |
+| `outletStockouts` | Integer | Outlet × category pairs sold out once households have shopped, read by the "Outlet stockouts" probe | 0, then set in every `step` |
 | `listOfOutlets` | — | Declared, never used | — |
 
 ### 2.3 Food categories (`FEBFoodCategory`)
@@ -111,11 +116,13 @@ Instance state:
 |---|---|---|---|
 | `householdSize` | Integer | Number of persons | `randomIntegerBetween: minHouseholdSize and: maxHouseholdSize` (2..5, see §5.3) |
 | `dailyNeed` | Integer (meals/day) | Meals the household needs per day | `10 × householdSize` |
-| `foodPreferenceProportions` | OrderedDictionary category → proportion | Share of the daily need wanted per category, sorted most preferred first (ties by name) | One of 3 profiles (§5.4) |
+| `foodPreference` | `FEBFoodPreference` | The household's preference profile | Balanced diet at creation, then one of 3 profiles (§5.4) |
+| `foodPreferenceProportions` | OrderedDictionary category → proportion | Share of the daily need wanted per category, sorted most preferred first (ties by name) | From `foodPreference` (§5.4); tests may set it directly |
 | `substitutionList` | Dictionary category → category | Next category to eat/buy when one is missing | Same chain for every household (§7.3) |
+| `trip` | `FEBTrip` | The network of the legs walked today (§2.9) | Created the first time the household shops |
 | `strategy` | `FEBStrategy` | Money/time reserve thresholds | `MoneySaver`, then 50 % `MoneySaver` / 50 % `TimeSaver` |
 | `shoppingStrategy` | `FEBShoppingStrategy` | Trip algorithm | `FEBSimpleShoppingStrategy` |
-| `inventory` | `FEBFoodInventory` | Food at home (fridge + outside) and trashbin | `dailyNeed` meals of the most preferred category, outside the fridge |
+| `inventory` | `FEBFoodInventory` | Food at home (fridge + outside) and trashbin | Empty at creation; `dailyNeed` meals of the most preferred category, outside the fridge, given at init (§5.4) |
 | `availableMoneyPerStep` | Number | Money available for food each step | Class parameter `availableMoneyPerStep` |
 | `availableTimePerStep` | Duration | Time available for shopping each step | Class parameter `availableTimePerStep` hours |
 | `remainingMoney` | Number | Money left during the current trip | Reset to `availableMoneyPerStep` when shopping starts; **not carried over** |
@@ -170,11 +177,15 @@ The outlets' restock at creation is recorded in the step‑0 record.
 | Time step | **1 day** (shelf lives in days; households "eat in the morning and then consider buying food for the next day"; `availableTimePerStep` per step) |
 | Simulation length | *(not set by the model; chosen in the Cormas simulation interface)* |
 | Space | Regular grid of square cells, 8‑neighbourhood, closed (non‑toroidal) borders |
-| Grid size | 30 × 30 (`initBigGridScenario`), 5 × 5 (`initUnconstraintedScenario`), 6 × 6 (`initCustomizable`) |
+| Grid size | 30 × 30 (`initBigGridScenario` and the scenario inits), 5 × 5 (`initUnconstraintedScenario`), 6 × 6 (`initCustomizable`) |
 | Cell size | Expressed only as walking time: **5 minutes per cell** (`FEBCell>>timeToTravelTo:`). The physical length is *(not inferable from the code)*. |
 | Distance | Cormas `distanceTo:` on a closed 8‑neighbourhood grid = **Chebyshev distance** `max(|Δrow|, |Δcolumn|)` (diagonal moves cost one cell) |
 | Food unit | 1 portion = 1 meal; a person needs 10 meals a day |
 | Money unit | *(not inferable from the code)*; all prices are 5 units per meal |
+
+### 2.9 Shopping trips (`FEBTrip`, `FEBTripLeg`)
+
+Each walk of a shopping trip is a directed link, a `FEBTripLeg`: from the household's home, or from the outlet it has just left, to the next outlet visited (§7.4). The legs of one household belong to its trip, a `FEBTrip` network that knows its household and whether it is highlighted. Legs last one day: `FEBModel>>step` deletes them all before the households act, which also takes them out of their trips, while the trips themselves stay. Trips have no effect on the simulation: they record where households walked, for the new probes (§8.1) and for the space view (§8.2).
 
 ---
 
@@ -182,9 +193,11 @@ The outlets' restock at creation is recorded in the step‑0 record.
 
 The Cormas control method is `FEBModel>>step` (pragma `<control>`). Within one time step:
 
-1. All **households**, in a **new random order**, execute `FEBHousehold>>step`.
-2. Then all **outlets**, in a **new random order**, execute `FEBOutlet>>step`.
-3. Cormas then records the probes (§8) and announces `CMTimeStepEnded` (used by the dashboards).
+1. Yesterday's **trip legs are deleted** (§2.9).
+2. All **households**, in a **new random order**, execute `FEBHousehold>>step`.
+3. The model **counts the outlet stockouts** (`countStockouts`): what households left, before outlets restock.
+4. Then all **outlets**, in a **new random order**, execute `FEBOutlet>>step`.
+5. Cormas then records the probes (§8) and announces `CMTimeStepEnded` (used by the dashboards).
 
 ![Model schedule](img/05-model-schedule.png)
 
@@ -195,7 +208,7 @@ The Cormas control method is `FEBModel>>step` (pragma `<control>`). Within one t
 1. **Empty the trashbin** (food that spoiled the previous night is thrown away).
 2. **Eat** (`consumeFood`, §7.1) up to `dailyNeed` meals; record them; update `hungerMemory`.
 3. **Decide whether to shop** (`shouldGoShopping`, §7.2).
-4. If so, **go shopping** (`goShopping`): reset money and time, **build a shopping list** (§7.3), **do the trip** (§7.4–7.5), record money/time available and time spent, call `reconsiderPreference` (empty, TODO).
+4. If so, **go shopping** (`goShopping`): reset money and time, **build a shopping list** (§7.3), **do the trip** (§7.4–7.5, one trip leg per walk), record money/time available and time spent, call `reconsiderPreference` (empty, TODO).
 5. **Age the food** (`becomeOneDayOlder`): every batch loses one day; expired batches move to the trashbin.
 6. **Record the end of the day** (stock levels and spoiled food).
 
@@ -244,7 +257,7 @@ From the code, these outputs are not imposed but result from interactions betwee
 - Households adapt **what they eat** to what is in their inventory (own share → substitutes → any food left).
 - They adapt **what they buy** to their stock (only what is missing for tomorrow and the next 5 days), to fridge space (perishable storage replaced by non‑perishable substitutes), to money (essential first, then storage within a reserve) and to time (stop when the next outlet is too far).
 - They adapt **where they buy** to availability (go on to the next closest outlet when needs remain).
-- `reconsiderPreference` exists but is empty: preferences and strategies **do not change** over time.
+- `reconsiderPreference` exists but is empty: the model never changes preferences or strategies over time. A user can change them during a run with the household actions (`prefer…`, `be…Saver`); a new preference keeps the food already bought.
 
 ### 4.4 Objectives
 
@@ -274,9 +287,9 @@ Households anticipate **tomorrow**: food that will be expired tomorrow (`remaini
 
 | Where | Random process |
 |---|---|
-| Placement | Households and outlets on random empty cells (`create:randomlyLocatedAloneEntitiesOfClass:`); never two on the same cell |
+| Placement | Households and outlets on random empty cells, never two on the same cell; outlets only within the scenario's region when it has one (`initializeAgentsWithOutletsOn:`) |
 | Household size | `(min + U[0,1) × (max − min)) rounded` (Cormas `randomIntegerBetween:and:`) |
-| Preference profile | Households shuffled, then profile A, B, C assigned in turn |
+| Preference profile | Households shuffled, then sent `preferMeatAndDairy`, `preferStapleAndProcessedFood`, `preferBalancedDiet` in turn |
 | Strategy | Households shuffled; first 50 % MoneySaver, rest TimeSaver |
 | Restock | 10 draws with replacement of a category, uniformly among the 5 |
 | Scheduling | Households, then outlets, shuffled each step |
@@ -286,7 +299,7 @@ All random draws use the Cormas random number generator, so a fixed seed reprodu
 
 ### 4.10 Collectives
 
-None explicitly. Households sharing a preference profile or a strategy form groups only for observation (shapes in the perspectives).
+None that affect the simulation. Households sharing a preference profile form groups only for observation (the `aspectFoodPreference:` colours). Each household's trip legs form a network (`FEBTrip`, §2.9), which is also only observed.
 
 ### 4.11 Observation
 
@@ -306,13 +319,24 @@ When a `FEBModel` is created, Cormas `initializeParameters` resets every paramet
 
 ### 5.2 Scenarios (init methods)
 
-| Init method | Grid | Households | Outlets | Parameters overwritten | Default perspective |
-|---|---|---|---|---|---|
-| `initBigGridScenario` | 30 × 30 | 100 | 40 | none | `perspectiveSatiety` |
-| `initUnconstraintedScenario` | 5 × 5 | 2 | 20 | money 2000, time 24 h, fridge 500, restock 300 | `perspectiveSatietyAndOutletImages` |
-| `initCustomizable` | 6 × 6 | `numberOfHouseholds` | `numberOfOutlets` | restock 3000 | `perspectiveSatietyAndOutletImages` |
+| Init method | Grid | Households | Outlets | Parameters overwritten |
+|---|---|---|---|---|
+| `initBigGridScenario` | 30 × 30 | 100 | 40 | none |
+| `initUnconstraintedScenario` | 5 × 5 | 2 | 20 | money 2000, time 24 h, fridge 500, restock 300 |
+| `initCustomizable` | 6 × 6 | `numberOfHouseholds` | `numberOfOutlets` | none |
 
-All grids: 8‑neighbourhood, closed. Each init then calls `initializeFoodCategories` and `initializeAgents`.
+All grids: 8‑neighbourhood, closed; every init opens in `perspectiveSatiety`. Each init then calls `initializeFoodCategories` and `initializeAgents`.
+
+**Experiment scenarios.** Six more inits, used in [`scenarios.md`](scenarios.md), share `initScenarioWithOutlets:restocking:on:`. It sets **every** class parameter (100 households of 2–5 people, money 200, 2 h, fridge 20, consumption strategy "No spoil weirdo"), creates a 30 × 30 grid and places the outlets with `initializeAgentsWithOutletsOn:`, only on the cells where the scenario's block answers true:
+
+| Init method | Outlets | Placement | Restock per outlet |
+|---|---|---|---|
+| `initBaseline` | 40 | anywhere | 100 |
+| `initAbundantSupply` | 40 | anywhere | 200 |
+| `initScarceSupply` | 40 | anywhere | 60 |
+| `initNearOutlets` | 100 | anywhere | 40 |
+| `initUnequalDistance` | 40 | columns 1–15 | 100 |
+| `initFoodDesert` | 10 | rows and columns 1–10 | 400 |
 
 ### 5.3 Households
 
@@ -321,11 +345,20 @@ All grids: 8‑neighbourhood, closed. Each init then calls `initializeFoodCatego
 - `householdSize` = `(min + U[0,1)·(max − min)) rounded`. With the defaults 2 and 5: P(2) = 1/6, P(3) = 1/3, P(4) = 1/3, P(5) = 1/6 (mean 3.5).
 - `dailyNeed = 10 × householdSize`.
 - Money and time from the class parameters; `remainingMoney`/`remainingTime` set to them.
-- Strategy MoneySaver (temporary), `FEBSimpleShoppingStrategy`, empty history.
+- Strategy MoneySaver and preference "balanced diet" (both temporary), an empty inventory with the class fridge capacity, `FEBSimpleShoppingStrategy`, empty history.
+- The default preference needs the model's food categories, so households can only be created after `initializeFoodCategories` (Appendix C).
 
 ### 5.4 Preferences
 
-`initializePreferences` shuffles the households and assigns, by index modulo 3:
+Each preference profile is a subclass of `FEBFoodPreference`, which holds the share of each category by name (`shares`) and a colour, and each has a household `<action>` that sets it:
+
+| Profile | Class | Action | Colour |
+|---|---|---|---|
+| A | `FEBMeatAndDairyPreference` | `preferMeatAndDairy` | red |
+| B | `FEBStapleAndProcessedFoodPreference` | `preferStapleAndProcessedFood` | brown |
+| C | `FEBBalancedDietPreference` | `preferBalancedDiet` | green |
+
+`initializePreferences` shuffles the households and sends them the three actions in turn, by index modulo 3:
 
 | Category | A "eats a lot of meat and dairy" | B "eats a lot of staple and processed food" | C "has a balanced diet" |
 |---|---|---|---|
@@ -335,7 +368,7 @@ All grids: 8‑neighbourhood, closed. Each init then calls `initializeFoodCatego
 | Dairy | 0.30 | 0.10 | 0.15 |
 | Processed food | 0.05 | 0.30 | 0.10 |
 
-So the profiles are as equal in number as possible (A gets the extra household(s)). Setting preferences also **initializes the inventory**: fridge capacity from the class parameter, and one batch of `dailyNeed` meals of the **most preferred category, outside the fridge**, with that category's outside shelf life (so households can eat on the first step).
+So the profiles are as equal in number as possible (A gets the extra household(s)). After its preference, each household gets its **first day of food** (`storeFoodForTheFirstDay`): one batch of `dailyNeed` meals of the **most preferred category, outside the fridge**, with that category's outside shelf life, so that it can eat on the first step. A preference set later, through an action, keeps the food already bought.
 
 ### 5.5 Substitution list
 
@@ -359,7 +392,7 @@ So the profiles are as equal in number as possible (A gets the extra household(s
 
 ### 5.7 Outlets
 
-Created after the households, on random empty cells. `FEBOutlet>>initialize` sets every price to 5, creates an empty history and inventory, and **restocks once** (§7.7). Finally every household receives the collection of all outlets.
+Created after the households, on random empty cells (only within the scenario's region, if it has one). `FEBOutlet>>initialize` sets every price to 5, creates an empty history and inventory, and **restocks once** (§7.7). Finally every household receives the collection of all outlets.
 
 ---
 
@@ -429,7 +462,7 @@ The list keeps the insertion order, which is the preference order (most preferre
    1. Choose the **unvisited outlet closest to the current position** (greedy nearest neighbour, Chebyshev distance).
    2. Travel time `t = 5 min × distance`.
    3. Time budget: `remainingTime` if essential needs remain; otherwise `remainingTime − availableTimePerStep × timeThreshold`. If `t` exceeds the budget, the trip **ends**.
-   4. Move there, mark it visited, `remainingTime −= t`.
+   4. Record the walk as a `FEBTripLeg` from the previous stop (home at first) to this outlet, in the household's trip (§2.9). Move there, mark it visited, `remainingTime −= t`.
    5. **Buy essentials** (each essential need in list order, money limit = `remainingMoney`), then **buy for storage** (money limit = `remainingMoney − availableMoneyPerStep × moneyThreshold`, recomputed after each category; stop as soon as it is ≤ 0).
 3. Purchases reduce the list: essential need first, then storage need of the same category (`decreaseNeedOf:by:`).
 
@@ -508,20 +541,38 @@ Unused metrics on `FEBHousehold`: `averageDistanceTo5ClosestOutlets`, `averageDi
 | Demand | Σ `dailyNeed` | — |
 | Supply | Σ `restockAmount` of outlets (constant) | — |
 | Total supply | Σ meals in outlets' inventories | — |
+| Missing meals | Σ over households of `dailyNeed` − meals eaten that day | 0 |
+| Average diet diversity | mean number of food categories eaten that day | 0 |
+| Outlet stockouts | outlet × category pairs sold out once households have shopped (`outletStockouts`) | 0 |
+| Minutes to the first outlet | mean walk from home to the first outlet, among households that reached one (first trip leg) | 0 |
+| Outlets visited | mean number of trip legs, among households that reached an outlet | 0 |
+| Shopping minutes | mean `timeSpent`, among households that went shopping | 0 |
+| Share of budget spent | mean `moneySpent / moneyAvailable`, among households that went shopping | 0 |
 
-There is no probe for outlet waste, money or time spent, healthy diet, meal reasons or distances; these exist only in the per‑entity records and dashboards.
+The last seven probes were added for the experiment scenarios ([`scenarios.md`](scenarios.md) §2). There is still no probe for outlet waste, healthy diet or meal reasons; these exist only in the per‑entity records and dashboards.
 
-### 8.2 Perspectives and points of view
+### 8.2 Perspectives and aspects
 
-| Perspective | Households coloured by | Outlets |
+Each entity class has **aspects** (methods with `<aspect>`, filling a look), and a **perspective** chooses the aspect of each class and which classes are hidden. The Aspects panel of a space view changes these choices.
+
+| Perspective | Households shown with | Hidden |
 |---|---|---|
-| `perspectiveSatiety` | satiety level | — |
-| `perspectiveSatietyAndOutletImages` | satiety level | outlet icon |
-| `perspectiveCaloricAdequacy` | caloric level | — |
-| `perspectiveProteinAdequacy` | protein level | — |
-| `perspectiveHealthyDiet` | green healthy / red not | — |
+| `perspectiveSatiety` | `aspectSatietyIndicator:` | `FEBTrip` |
+| `perspectiveCaloricAdequacy` | `aspectCaloricAdequacyIndicator:` | `FEBTrip` |
+| `perspectiveProteinAdequacy` | `aspectProteinAdequacyIndicator:` | `FEBTrip` |
+| `perspectiveHealthyDiet` | `aspectHealthyDiet:` (green healthy / red not) | `FEBTrip` |
 
-Colours: red `#B85353` (hungry, severely inadequate), orange `#E5A16D` (unsatiated, inadequate), green `#78A882` (full, adequate), purple `#9274B5` (excess); grey before the first step. Shape = strategy (square MoneySaver, triangle TimeSaver, circle DesperateSaver, star RichBastard). Size = `0.5 + 0.5 × (size − min)/(max − min)`. Older `pov…` methods give the same information for the legacy Cormas UI.
+| Class | Aspects |
+|---|---|
+| `FEBCell` | default: the `grass` image, no border; `aspectWhite:` |
+| `FEBOutlet` | default: the `outlet` image, size 0.8 |
+| `FEBHousehold` | default: the `household` image, square, size `0.5 + 0.5 × (size − min)/(max − min)`; the four indicator aspects tint it with the level colour (60 % opacity); `aspectFoodPreference:` tints it with the preference colour (§5.4) |
+| `FEBTrip` | default: orange path, 0.05 of a cell thick; red when highlighted, and every other trip hidden; `aspectHousehold:`: a colour per household (`colorGroupedBy:` its id), the same hiding |
+| `FEBTripLeg` | always invisible: its trip draws the path |
+
+Indicator colours (`CMColor`): red `#B90E0A` (hungry, severely inadequate), gold `#E5B80B` (unsatiated, inadequate), green `#00B44C` (full, adequate), purple `#660099` (excess); grey `#808080` before the first step. The strategy is no longer shown (all households are squares).
+
+Trips are hidden in every perspective of the model and shown with the eye of `FEBTrip` in the Aspects panel. The household actions `highlightTrip` (highlight this household's trip, which hides the others) and `unhighlightTrip` (no trip highlighted, all shown) change what the trip aspects show; a highlight lasts until it is cleared. A network draws a line without arrowheads, so the direction of the walk is not shown.
 
 ### 8.3 Dashboards (`FE_Beta-Model-UI`)
 
@@ -543,15 +594,17 @@ A **Dashboard** inspector tab on any household or outlet (also `FEBHouseholdDash
 
 | Parameter | Owner | Type / range | Default | Overwritten by |
 |---|---|---|---|---|
-| `numberOfHouseholds` | `FEBModel` (instance) | Integer 0–1000 | 2 | BigGrid 100, Unconstrained 2 |
-| `numberOfOutlets` | `FEBModel` (instance) | Integer 0–1000 | 1 | BigGrid 40, Unconstrained 20 |
-| `availableMoneyPerStep` | `FEBHousehold` class | Integer 1–10000 | 100 | Unconstrained 2000 |
-| `availableTimePerStep` (hours) | `FEBHousehold` class | Float 0–24 | 2 | Unconstrained 24 |
-| `fridgeCapacity` (meals) | `FEBHousehold` class | Integer 0–10000 | 6 | Unconstrained 500 |
-| `minHouseholdSize` | `FEBHousehold` class | Integer | 2 | — |
-| `maxHouseholdSize` | `FEBHousehold` class | Integer | 5 | — |
-| `consumptionStrategySymbol` | `FEBHousehold` class | `#'No spoil weirdo'` / `#'Some fuck about spoil'` | `#'No spoil weirdo'` | — |
-| `restockAmount` (meals per outlet per step) | `FEBOutlet` class | Integer 10–10000, step 10 | 200 | Unconstrained 300, Customizable 3000 |
+| `numberOfHouseholds` | `FEBModel` (instance) | Integer 0–1000 | 2 | BigGrid 100, Unconstrained 2, scenarios 100 |
+| `numberOfOutlets` | `FEBModel` (instance) | Integer 0–1000 | 1 | BigGrid 40, Unconstrained 20, scenarios 10–100 |
+| `availableMoneyPerStep` | `FEBHousehold` class | Integer 1–10000 | 100 | Unconstrained 2000, scenarios 200 |
+| `availableTimePerStep` (hours) | `FEBHousehold` class | Float 0–24 | 2 | Unconstrained 24, scenarios 2 |
+| `fridgeCapacity` (meals) | `FEBHousehold` class | Integer 0–10000 | 6 | Unconstrained 500, scenarios 20 |
+| `minHouseholdSize` | `FEBHousehold` class | Integer | 2 | scenarios 2 |
+| `maxHouseholdSize` | `FEBHousehold` class | Integer | 5 | scenarios 5 |
+| `consumptionStrategySymbol` | `FEBHousehold` class | `#'No spoil weirdo'` / `#'Some fuck about spoil'` | `#'No spoil weirdo'` | scenarios `#'No spoil weirdo'` |
+| `restockAmount` (meals per outlet per step) | `FEBOutlet` class | Integer 10–10000, step 10 | 200 | Unconstrained 300, scenarios 40–400 |
+
+"Scenarios" are the six experiment inits of §5.2, which set every class parameter.
 
 ### A.2 Hard-coded constants
 
@@ -569,7 +622,9 @@ A **Dashboard** inspector tab on any household or outlet (also `FEBHouseholdDash
 | Share of MoneySavers | 0.5 | `FEBModel>>initializeStrategies` |
 | Fridge rule | outside ≤ 2 days and fridge > 2 days | `FEBFoodCategory>>shouldBeStoredInFridge` |
 | Initial `satisfactionMemory` | 2 (unused) | `FEBHousehold>>initialize` |
-| Food categories, preferences, substitution chain, strategy thresholds | see §2.3, §5.4, §5.5, §7.4 | `FEBModel`, strategies |
+| Food categories, substitution chain, strategy thresholds | see §2.3, §5.5, §7.4 | `FEBModel`, strategies |
+| Preference shares and colours | see §5.4 | `shares`, `color` of the `FEBFoodPreference` subclasses |
+| Trip thickness and colours | 0.05 of a cell; orange, red when highlighted | `FEBTrip>>aspectDefault:` |
 
 ---
 
@@ -624,17 +679,19 @@ These are facts about the current code that matter when reading results. They ar
 4. **Outlets sell the freshest food first** (LIFO), while households eat the oldest food first.
 5. **Restock ignores demand**: categories are random; staple and processed food (30 days) accumulate in outlets over the first 30 steps.
 6. **All prices are equal (5)**, so prices play no role in choices other than the total budget.
-7. **Preferences, strategies and the substitution chain never change**; `reconsiderPreference` is a TODO.
+7. **The model never changes preferences, strategies or the substitution chain**; `reconsiderPreference` is a TODO. Only a user can, with the household actions.
 8. **`hungerMemory` and `satisfactionMemory` have no effect.**
 9. **`hasFoodForOneDay` counts food in its last day**, whereas the preferred-food check and the shopping list do not.
 10. **The healthy diet indicator checks all 5 categories** (because every profile contains all 5), with an absolute threshold of 7 meals per week per household.
 11. **Strategies are given to `self agents`**; this is correct only because outlets are created afterwards.
 12. **The consumption strategy is a class parameter**: all households use the same one.
-13. **`initUnconstraintedScenario` and `initCustomizable` overwrite parameters**, so values changed in the Cormas interface for those parameters are ignored with those inits.
+13. **`initUnconstraintedScenario` and the six scenario inits overwrite parameters**, so values changed in the Cormas interface for those parameters are ignored with those inits. The scenario inits set every class parameter, so no value is left over from an earlier run; the class parameters keep the scenario's values afterwards.
 14. **The fridge substitution uses the free space before shopping**; essential perishable purchases made during the trip can still overflow the fridge.
 15. **Ties between equidistant outlets** are broken by the order of the outlets collection.
 16. **The "Supply" probe is constant** (`numberOfOutlets × restockAmount`).
-17. Unused state: `FEBModel>>listOfOutlets`, `FEBOutlet>>conventionalFoodInventory`, `healthyFoodInventory`, `FEBCell>>state` (always `#empty`).
+17. Unused state: `FEBModel>>listOfOutlets`, `FEBOutlet>>conventionalFoodInventory`, `healthyFoodInventory`, `FEBCell>>state` (always `#empty`). Unused methods: `FEBHousehold>>shapeOfPovBasedOnStrategy` (the strategy is no longer drawn) and the distance metrics of §7.9.
+18. **A household needs the model's food categories when it is created**, because `FEBHousehold>>initialize` sets the balanced‑diet preference. Creating a household in a model without food categories fails; this is why the 16 tests of `FEBHouseholdConsumptionTest` fail at commit `3460a98`.
+19. **Trip legs are created and deleted every step** (about 750 a step in the 100‑household scenarios). Measured on 2026‑11‑18, this adds about 1.2 ms to a step of 175 ms.
 
 ---
 
@@ -644,9 +701,9 @@ These are facts about the current code that matter when reading results. They ar
 
 | Package | Content |
 |---|---|
-| `FE_Beta-Model` | Model, agents, food, strategies, records |
+| `FE_Beta-Model` | Model, agents, food, preferences, strategies, trips, records |
 | `FE_Beta-Model-UI` | Dashboards, day presenters, charts (Roassal), step navigator, inspector extensions |
-| `FE_Beta-Model-Tests` | 9 test classes |
+| `FE_Beta-Model-Tests` | 10 test classes |
 | `BaselineOfAmaeaModel` | Loads the three packages (Cormas is not in the baseline) |
 
 ### D.2 Where each process lives
@@ -654,7 +711,10 @@ These are facts about the current code that matter when reading results. They ar
 | Process | Method |
 |---|---|
 | Schedule | `FEBModel>>step` |
-| Init | `FEBModel>>initBigGridScenario`, `initUnconstraintedScenario`, `initCustomizable`, `initializeAgents`, `initializeFoodCategories`, `initializePreferences`, `initializeSubstitutionList`, `initializeStrategies` |
+| Init | `FEBModel>>initBigGridScenario`, `initUnconstraintedScenario`, `initCustomizable`, `initializeAgents`, `initializeAgentsWithOutletsOn:`, `initializeFoodCategories`, `initializePreferences`, `initializeSubstitutionList`, `initializeStrategies` |
+| Scenario inits | `FEBModel>>initScenarioWithOutlets:restocking:on:`, `initBaseline`, `initAbundantSupply`, `initScarceSupply`, `initNearOutlets`, `initUnequalDistance`, `initFoodDesert` (protocol `scenarios`) |
+| Preferences | `FEBHousehold>>prefer:`, `preferMeatAndDairy`, `preferStapleAndProcessedFood`, `preferBalancedDiet`, `storeFoodForTheFirstDay`; `FEBFoodPreference>>sharesIn:` |
+| Trips | `FEBTrip`, `FEBTripLeg`; `FEBHousehold>>trip`, `highlightTrip`, `unhighlightTrip`; deleted in `FEBModel>>step` |
 | Household step | `FEBHousehold>>step` |
 | Eating | `consumeFood`, `eatFoodInItsLastDay`, `eatMealsByPreference:`, `eat:mealsOf:as:`, `eat:substitutesFor:`, `eatAnyFood:`, `mealsPerCategoryFor:` |
 | Shopping decision | `shouldGoShopping`, `hasFoodForOneDay`, `hasPreferredFoodForOneDay` |
@@ -665,14 +725,18 @@ These are facts about the current code that matter when reading results. They ar
 | Restock | `FEBOutlet>>restock` |
 | Ageing | `FEBFoodInventory>>becomeOneDayOlder`, `removeExpiredBatched` |
 | Indicators | `FEBHousehold>>satietyScoreOn:`, `caloricAdequacyScoreOn:`, `proteinAdequacyScoreOn:`, `isHavingHealthyDietOn:`, `…LevelOf:` |
-| Probes | `FEBModel` methods with `<probeNamed:color:>` |
+| Probes | `FEBModel` methods with `<probeNamed:color:>`; helpers in protocol `probes - private`; `FEBHousehold>>missingMeals`, `dietDiversity`; `FEBOutlet>>isOutOf:` |
 
 ### D.3 What the tests establish
 
-The test suite (about 120 tests) states the intended behaviour:
+The test suite (143 tests) states the intended behaviour:
 
 - **Food** (`FEBFoodBatchTest`, `FEBFoodInventoryTest`): batches are never empty; food lasts longer in the fridge; moving food never makes it fresher; spoiled food goes to the trashbin and is counted per category.
 - **Eating** (`FEBHouseholdConsumptionTest`): proportions are respected; meals add up to the daily need; soonest‑expiring first; substitutes follow the list; leftovers rather than hunger; never eats spoiled food; behaviour of both consumption strategies.
 - **Shopping** (`FEBShoppingTripTest`, `FEBHouseholdTest`, `FEBShoppingListTest`): closest outlet first; moves on when an outlet is empty; time limit; walks further for today's food than for storage; money reserve for storage; never overspends; buys most preferred first when money is short; unspent money is not saved; fridge is never overfilled; strategy comparisons (MoneySaver vs TimeSaver, DesperateSaver vs RichBastard).
 - **Outlets** (`FEBOutletTest`): freshest first, never last‑day food, never more than stock or money allows, food and money only change hands.
-- **Model** (`FEBModelTest`): preferences sum to 1; half the households save money; sizes within limits; 10 meals per person; every fridge food has a non‑fridge substitute; sold = bought; days add up; same seed → same simulation.
+- **Model** (`FEBModelTest`): preferences sum to 1; households are shared equally among the three preferences; half the households save money; sizes within limits; 10 meals per person; every fridge food has a non‑fridge substitute; sold = bought; days add up; same seed → same simulation.
+- **Preferences** (`FEBHouseholdTest`): changing a household's preference keeps its food.
+- **Trips** (`FEBShoppingTripTest`): the trip goes from home to each visited outlet in turn; an outlet out of reach is not on it; the legs make up the household's trip; a new day starts without yesterday's trips; highlighting one trip unhighlights the others, and unhighlighting leaves none highlighted.
+- **Probes** (`FEBShoppingTripTest`, protocol `tests - probes`): missing meals, diet diversity, minutes to the first outlet, shopping minutes, outlets visited, share of budget spent, stockouts.
+- **Scenarios** (`FEBScenarioTest`): supply against demand in the baseline, scarce and abundant scenarios; the proximity scenarios keep the baseline supply; outlets are in their region; 100 households with a preference each.

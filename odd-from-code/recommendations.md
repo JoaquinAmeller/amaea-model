@@ -2,6 +2,13 @@
 
 Companion to [`odd.md`](odd.md). Based on reading the code at commit `89bba54` and on a few **exploratory runs** made in the image (big‑grid scenario, 100 households, 40 outlets, 30 steps, averages over steps 11–30, **one random seed** — indicative only, not results).
 
+> **Status at commit `3460a98` (2026‑11‑18).** Since these recommendations were written:
+>
+> - **Done:** each household now keeps its preference profile as an object (`foodPreference`, item 2.4 / checklist 11). Seven probes were added (missing meals, diet diversity, outlet stockouts, minutes to the first outlet, outlets visited, shopping minutes, share of budget spent), which covers money and time used and distance (part of item 1.5). Six named scenario inits set every parameter (part of item 1.4). Experiments with replicated seeds were run for availability and proximity: see [`scenarios.md`](scenarios.md), which also covers part of items 2.1–2.3 and 5.4.
+> - **Confirmed by those experiments:** money per household (item 1.1) makes 5‑person households hungry in every scenario. Trips that go on with no money and a walk home that is free (item 1.2) make time almost no constraint.
+> - **New:** `FEBHousehold>>initialize` now sets a default preference, which needs the model's food categories. The 16 tests of `FEBHouseholdConsumptionTest` fail because of it (checklist 15).
+> - **Still open:** everything else, marked in the checklist of §8.
+
 ---
 
 ## 0. Summary
@@ -11,9 +18,9 @@ Companion to [`odd.md`](odd.md). Based on reading the code at commit `89bba54` a
 | # | Action | Why now | Effort |
 |---|---|---|---|
 | 1 | **Decide how money scales with household size** (per person or per household) and fix the default budget | With the defaults, money alone decides the outcome: 84 % of households are hungry, whatever else you change | 1–2 h |
-| 2 | **Fix three small behaviour bugs**: trip continues with no money; household sizes not uniform; parameters overwritten by two inits | They bias every result and are one‑line fixes | 2 h |
-| 3 | **Add the missing probes** (outlet waste, money/time used, healthy diet, meal reasons, per‑strategy and per‑profile means) | You cannot analyse what you do not measure; today half of the interesting outputs are only in dashboards | 2–3 h |
-| 4 | **Write a batch‑run script** (seeds × parameters → CSV) and run a first one‑factor sweep | Turns the model from a demo into an experiment; gives you figures | 3–4 h |
+| 2 | **Fix three small behaviour bugs**: trip continues with no money; household sizes not uniform; parameters overwritten by `initUnconstraintedScenario` | They bias every result and are one‑line fixes | 2 h |
+| 3 | **Add the probes still missing** (outlet waste, healthy diet, meal reasons, per‑strategy and per‑profile means); money and time used and distances now have probes | You cannot analyse what you do not measure; today half of the interesting outputs are only in dashboards | 2 h |
+| 4 | **Turn the experiment loop of `scenarios.md` into a batch‑run script** (seeds × parameters → CSV) and run a first one‑factor sweep | Turns the model from a demo into an experiment; gives you figures | 2–3 h |
 | 5 | **Rename strategies and fill ODD §1 (purpose, patterns)** | Needed before showing the model to anyone outside the team | 1 h |
 
 A detailed 2‑day plan is in §2.
@@ -67,25 +74,28 @@ Each item: **What** · **Why** · **How** (where in the code) · **Done when**.
 
 #### 1.4 Do not overwrite parameters in inits *(30 min)*
 
-- **What**: `initUnconstraintedScenario` and `initCustomizable` set class parameters, so the Cormas parameter panel is silently ignored. Either move those values into named *scenarios* documented in the ODD, or keep one `initFromParameters` that reads everything from parameters (grid size too).
+- **What**: `initUnconstraintedScenario` sets class parameters, so the Cormas parameter panel is silently ignored. Either move those values into named *scenarios* documented in the ODD, or keep one `initFromParameters` that reads everything from parameters (grid size too).
 - **Done when**: changing a parameter in the UI changes the run, for every init.
+- **Status (`3460a98`)**: `initCustomizable` no longer sets the restock. The six experiment inits (`initBaseline` …) are named scenarios that set *every* class parameter, documented in `odd.md` §5.2. `initUnconstraintedScenario` still overwrites four parameters and leaves the others to whatever the previous run set.
 
 #### 1.5 Add probes *(2–3 h)*
 
 Add `<probeNamed:>` methods on `FEBModel` for:
 
-| Probe | Computation |
-|---|---|
-| Outlet waste | Σ over outlets of `history lastDay spoiledFood size` |
-| Food sold | Σ of today's sales quantities |
-| Share of budget spent | mean over households that shopped of `moneySpent / moneyAvailable` |
-| Share of time spent | idem with time |
-| Households that went shopping | count `history lastDay wentShopping` |
-| Number of people with a healthy diet | Σ size of `isHavingHealthyDiet` |
-| Share of meals that are substitutes / leftovers / last‑day | from `history lastDay meals` reasons |
-| Satiety of MoneySavers / TimeSavers | means per strategy |
-| Satiety and adequacy per preference profile (A, B, C) | requires storing the profile name on the household (see 2.4) |
-| Mean walking time | mean `timeSpent` |
+| Probe | Computation | Status (`3460a98`) |
+|---|---|---|
+| Outlet waste | Σ over outlets of `history lastDay spoiledFood size` | open |
+| Food sold | Σ of today's sales quantities | open |
+| Share of budget spent | mean over households that shopped of `moneySpent / moneyAvailable` | **done** (`averageShareOfBudgetSpent`) |
+| Share of time spent | idem with time | as minutes: **done** (`averageShoppingMinutes`) |
+| Households that went shopping | count `history lastDay wentShopping` | open (`householdsThatWentShopping` exists) |
+| Number of people with a healthy diet | Σ size of `isHavingHealthyDiet` | open |
+| Share of meals that are substitutes / leftovers / last‑day | from `history lastDay meals` reasons | open |
+| Satiety of MoneySavers / TimeSavers | means per strategy | open |
+| Satiety and adequacy per preference profile (A, B, C) | grouped by `foodPreference class` (see 2.4) | open, now possible |
+| Mean walking time | mean `timeSpent` | **done** (`averageShoppingMinutes`) |
+
+Also added, for the scenarios: missing meals, diet diversity, outlet stockouts, minutes to the first outlet, outlets visited (`odd.md` §8.1).
 
 Keep them cheap (they run every step). **Done when**: one run's CSV export contains all of them.
 
@@ -134,6 +144,8 @@ FEBHousehold availableMoneyPerStep: 100.
 
 A 30‑step big‑grid run takes ≈ 6 s, so 4 values × 10 seeds × 60 steps ≈ 8 min.
 
+**Status (`3460a98`)**: the first experiments were run with a loop of this kind, from a Playground, over six named scenarios × 10 seeds × 90 steps (`scenarios.md` §1, "Reproduce", and Figure 26). With the scenario inits, the parameters are set by the init itself, so the loop only chooses the init and the seed. Steps take ≈ 180 ms now on the 30 × 30 grid (17 s per 90‑step run, 25 s with 100 outlets). There is still no reusable script or class.
+
 #### 2.2 First experiments *(2 h running, 2 h plots)*
 
 1. **Warm‑up**: plot total supply and waste over 60 steps. Staple and processed food accumulate in outlets for 30 steps; **discard at least the first 30 steps** and use steps 31–60 (or longer) for outputs.
@@ -145,9 +157,11 @@ A 30‑step big‑grid run takes ≈ 6 s, so 4 values × 10 seeds × 60 steps �
 
 One page: the question, the scenario, the 3–4 plots, what changes outcomes (money, time < 30 min, consumption strategy), what does not (fridge, money/time saver).
 
+**Status (`3460a98`)**: [`scenarios.md`](scenarios.md) is a first write‑up of this kind for availability and proximity, with figures.
+
 #### 2.4 Small model additions if time remains
 
-- Store the preference profile name on each household (`#meatAndDairy`, `#stapleAndProcessed`, `#balanced`) so outputs can be split by profile.
+- ~~Store the preference profile name on each household so outputs can be split by profile.~~ **Done**: each household keeps its profile as an object, `foodPreference` (a `FEBFoodPreference` subclass), set by the actions `preferMeatAndDairy`, `preferStapleAndProcessedFood` and `preferBalancedDiet`; outputs can be split by `foodPreference class`.
 - Turn `availableMoneyPerStep` into a per‑household value drawn from a distribution (income heterogeneity).
 - Make `storageHorizon` (5) and the MoneySaver share (0.5) parameters.
 
@@ -183,14 +197,15 @@ Ordered by expected impact on the research question "how does the food environme
 ### 3.3 Space
 
 - Use a real map: Cormas can load rasters/shapefiles; place outlets from a register of shops (e.g. INSEE *Base permanente des équipements* in France) and households from census grids.
-- Make `averageDistanceTo5ClosestOutlets` and `numberOfOutletsWithin30Min` (already written, unused) **probes and household attributes** — they are standard food‑access metrics.
+- Make `averageDistanceTo5ClosestOutlets` and `numberOfOutletsWithin30Min` (already written, still unused) **probes and household attributes** — they are standard food‑access metrics. The "Minutes to the first outlet" probe measures the walk to the outlet actually visited first, which is the nearest by construction.
 - Walking speed / transport mode per household (car vs walking) as a parameter.
+- **Outlets placed in a region** are now possible (`initializeAgentsWithOutletsOn:`), as used by the unequal‑distance and food‑desert scenarios. Households could get the same option, for neighbourhoods with different access.
 
 ### 3.4 Indicators
 
 - **Healthy diet**: define per person and per day (e.g. ≥ X portions of fruits & vegetables per person per day), aligned with a recognised guideline, and report a continuous score, not only a boolean.
-- Add a **diet diversity score** and the **share of processed food**.
-- Add **economic indicators**: outlet revenue and waste value, household food spending share.
+- Add a **diet diversity score** and the **share of processed food**. *A first diversity measure exists: the number of categories eaten per day (`FEBHousehold>>dietDiversity`, probe "Average diet diversity").*
+- Add **economic indicators**: outlet revenue and waste value, household food spending share. *The spending share exists as the probe "Share of budget spent".*
 
 ---
 
@@ -243,7 +258,7 @@ Ordered by expected impact on the research question "how does the food environme
 2. **Replicates**: choose by coefficient of variation; report means with confidence intervals.
 3. **Global sensitivity**: Morris screening on ~10 parameters (money, time, fridge, restock, number of outlets, storage horizon, thresholds, MoneySaver share, consumption strategy), then Sobol indices on the important ones. Use R (`sensitivity` package) or Python (`SALib`) on the CSV from the batch script.
 4. **Scenario experiments** (policy‑relevant):
-   - *Food desert*: fewer outlets / clustered outlets far from part of the households.
+   - *Food desert*: fewer outlets / clustered outlets far from part of the households. **Done** as `initUnequalDistance` and `initFoodDesert` (`scenarios.md`).
    - *Income shock*: −20 % budget for low‑income households.
    - *Fresh‑food subsidy*: lower price for fruits & vegetables (after 3.1).
    - *Anti‑waste rules*: FIFO and markdowns at outlets, "eat expiring food first" campaign.
@@ -265,7 +280,7 @@ Satiety, caloric and protein adequacy (distribution, not only means), healthy‑
 
 ### 6.2 Figures
 
-1. **Map** of households coloured by satiety, outlets as icons (the Cormas perspective) — one before/after a scenario.
+1. **Map** of households coloured by satiety, outlets as icons (the Cormas perspective) — one before/after a scenario. *Examples: Figures 16–20 of `scenarios.md`, the last one with the day's shopping trips (`FEBTrip`) shown.*
 2. **Time series** of average indicators with confidence bands (after warm‑up).
 3. **Response curves**: satiety and waste vs money; vs shopping time (shows the 30‑min threshold).
 4. **Stacked bars** of meal reasons (own share / substitute / leftover / last day) per scenario.
@@ -275,6 +290,8 @@ Satiety, caloric and protein adequacy (distribution, not only means), healthy‑
 ### 6.3 Live demo
 
 The household and outlet dashboards are a strong demo: run the big grid for 10 steps, open a hungry 5‑person household, click a purchase to jump to the outlet, show the outlet's waste. Prepare a seed that gives a clear story.
+
+The trips add a second one: in `initFoodDesert`, show `FEBTrip` with the eye in the Aspects panel, then use `highlightTrip` on a far household to show its path alone, in red, to the corner.
 
 ---
 
@@ -288,25 +305,33 @@ Already, with the current code (to be confirmed with replicated runs):
 4. **Fridge capacity has little effect** under daily shopping — it would matter with less frequent shopping.
 5. **Money‑saving vs time‑saving strategies hardly matter** as implemented, because thresholds only apply to storage purchases.
 
+The first replicated experiments (`scenarios.md`: 10 seeds, 90 steps, budget 200, 2 h) add:
+
+6. **Availability matters strongly**: supply at 0.68 × demand lowers satiety from 0.91 to 0.68 and diversity by about one category; at 2.3 × demand, satiety only rises to 0.96, while household waste doubles.
+7. **Spatial access matters only when outlets are concentrated**: more outlets for the same supply fragments stock without improving diets; with outlets in one half or one corner, distance becomes the main source of inequality (r ≈ −0.6), and the farthest households reach a satiety of 0.67.
+8. **Household size still dominates** at a budget of 200 per household: 5‑person households are hungry even with abundant supply — which confirms point 1 and item 1.1.
+
 After the Priority‑2 changes, the model could address: food deserts and swamps, effects of price policies on diet quality, the link between time poverty and processed food, and the relative contribution of households and retailers to food waste.
 
 ---
 
 ## 8. Code‑level checklist
 
-| # | Item | Location | Priority |
-|---|---|---|---|
-| 1 | Money per person | `FEBHousehold>>initialize` | P1 |
-| 2 | Stop trip without money; count return | `FEBSimpleShoppingStrategy>>shopFor:using:`, `can:travelFor:with:` | P1 |
-| 3 | Uniform sizes | `FEBHousehold>>initialize` | P1 |
-| 4 | Inits must not overwrite parameters | `FEBModel>>initUnconstraintedScenario`, `initCustomizable` | P1 |
-| 5 | New probes | `FEBModel` | P1 |
-| 6 | Rename strategies | strategy classes, parameter values | P1 |
-| 7 | Remove or document dead state | `FEBModel`, `FEBOutlet`, `FEBCell`, `FEBHousehold` | P1 |
-| 8 | `hasFoodForOneDay` should ignore last‑day food (consistency) | `FEBHousehold>>hasFoodForOneDay` | P2 |
-| 9 | Fridge substitution should include essential perishables | `substitutePerishableFoodThatWontFitInFridge:` | P2 |
-| 10 | Strategies given to `self households`, not `self agents` | `FEBModel>>initializeStrategies` | P2 |
-| 11 | Profile name on households | `FEBModel>>initializePreferences` | P1–P2 |
-| 12 | Consumption strategy per household | `FEBHousehold class>>consumptionStrategy` | P2 |
-| 13 | Prices, outlet types, restock rule, FIFO | `FEBOutlet` | P2 |
-| 14 | Parameterise 10 meals, 2000 kcal, 60 g, 5‑day horizon, 5 min/cell | various | P2 |
+| # | Item | Location | Priority | Status (`3460a98`) |
+|---|---|---|---|---|
+| 1 | Money per person | `FEBHousehold>>initialize` | P1 | open |
+| 2 | Stop trip without money; count return | `FEBSimpleShoppingStrategy>>shopFor:using:`, `can:travelFor:with:` | P1 | open |
+| 3 | Uniform sizes | `FEBHousehold>>initialize` | P1 | open |
+| 4 | Inits must not overwrite parameters | `FEBModel>>initUnconstraintedScenario` | P1 | partly: `initCustomizable` fixed, scenario inits set every parameter |
+| 5 | New probes | `FEBModel` | P1 | partly: 7 added (§1.5) |
+| 6 | Rename strategies | strategy classes, parameter values | P1 | open |
+| 7 | Remove or document dead state | `FEBModel`, `FEBOutlet`, `FEBCell`, `FEBHousehold` (also `shapeOfPovBasedOnStrategy`) | P1 | documented in `odd.md` Appendix C |
+| 8 | `hasFoodForOneDay` should ignore last‑day food (consistency) | `FEBHousehold>>hasFoodForOneDay` | P2 | open |
+| 9 | Fridge substitution should include essential perishables | `substitutePerishableFoodThatWontFitInFridge:` | P2 | open |
+| 10 | Strategies given to `self households`, not `self agents` | `FEBModel>>initializeStrategies` | P2 | open |
+| 11 | Profile name on households | `FEBModel>>initializePreferences` | P1–P2 | **done** (`foodPreference`) |
+| 12 | Consumption strategy per household | `FEBHousehold class>>consumptionStrategy` | P2 | open |
+| 13 | Prices, outlet types, restock rule, FIFO | `FEBOutlet` | P2 | open |
+| 14 | Parameterise 10 meals, 2000 kcal, 60 g, 5‑day horizon, 5 min/cell | various | P2 | open |
+| 15 | A household must be creatable without food categories, or tests must create them first: the default preference in `initialize` makes 16 tests of `FEBHouseholdConsumptionTest` fail | `FEBHousehold>>initialize`, `FEBHouseholdConsumptionTest>>setUp` | P1 | **new** |
+| 16 | Stockouts per food category, not only in total | `FEBModel>>countStockouts` | P2 | **new** |
